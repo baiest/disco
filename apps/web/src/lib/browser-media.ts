@@ -43,6 +43,10 @@ export function readVideoDuration(file: Blob): Promise<number | undefined> {
   return new Promise((resolve) => {
     const video = document.createElement("video");
     const url = URL.createObjectURL(file);
+    if (!url.startsWith("blob:")) {
+      resolve(undefined);
+      return;
+    }
     const finish = (seconds: number | undefined) => {
       URL.revokeObjectURL(url);
       resolve(seconds);

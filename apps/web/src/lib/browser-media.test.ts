@@ -106,6 +106,12 @@ describe("readVideoDuration", () => {
     expect(revoke).toHaveBeenCalledWith("blob:v");
   });
 
+  it("never loads anything that is not a local blob address", async () => {
+    stubVideo("loadedmetadata", 5);
+    URL.createObjectURL = vi.fn(() => "https://evil.example/x.mp4");
+    await expect(readVideoDuration(new Blob(["x"]))).resolves.toBeUndefined();
+  });
+
   it("gives nothing when the duration is not a number", async () => {
     const { fire } = stubVideo("loadedmetadata", Number.POSITIVE_INFINITY);
     const result = readVideoDuration(new Blob(["x"]));
