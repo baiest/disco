@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { databaseUrl, inTransaction, insertPhoto, insertRecord } from "./harness/db";
+import { databaseUrl, inTransaction, insertMedia, insertRecord } from "./harness/db";
 
 describe.skipIf(databaseUrl() === null)("records table", () => {
   it("creates a draft owned by the caller with only defaults", () =>
@@ -160,7 +160,7 @@ describe.skipIf(databaseUrl() === null)("records table", () => {
       const id = await insertRecord(db, user, { photos: 2, status: "available" });
       await db.asAdmin();
       await db.query("delete from public.records where id = $1", [id]);
-      const { rows } = await db.query("select count(*)::int as n from public.record_photos where record_id = $1", [id]);
+      const { rows } = await db.query("select count(*)::int as n from public.record_media where record_id = $1", [id]);
       expect(rows[0]).toMatchObject({ n: 0 });
     }));
 
@@ -168,8 +168,106 @@ describe.skipIf(databaseUrl() === null)("records table", () => {
     inTransaction(async (db) => {
       const user = await db.newUser();
       const id = await insertRecord(db, user);
-      await insertPhoto(db, user, id, 0);
-      const { rows } = await db.query("select count(*)::int as n from public.record_photos where record_id = $1", [id]);
+      await insertMedia(db, user, id, 0);
+      const { rows } = await db.query("select count(*)::int as n from public.record_media where record_id = $1", [id]);
       expect(rows[0]).toMatchObject({ n: 1 });
     }));
+
+  describe("sale date", () => {
+    it("is set when the record becomes sold and cleared when it is not sold anymore", () =>
+      inTransaction(async (db) => {
+        const user = await db.newUser();
+        const id = await insertRecord(db, user, { photos: 1, status: "available" });
+        await db.query("update public.records set status = 'sold' where id = $1", [id]);
+        const sold = await db.query("select sold_at is not null as has_date from public.records where id = $1", [id]);
+        expect(sold.rows[0]).toMatchObject({ has_date: true });
+
+        await db.query("update public.records set status = 'available' where id = $1", [id]);
+        const back = await db.query("select sold_at from public.records where id = $1", [id]);
+        expect(back.rows[0]).toMatchObject({ sold_at: null });
+      }));
+
+    it("keeps the original date while the record stays sold", () =>
+      inTransaction(async (db) => {
+        const user = await db.newUser();
+        const id = await insertRecord(db, user, { photos: 1, status: "available" });
+        await db.query("update public.records set status = 'sold' where id = $1", [id]);
+        await db.query("update public.records set sold_at = '2020-01-01' where id = $1", [id]);
+        await db.query("update public.records set notes = 'edited' where id = $1", [id]);
+        const { rows } = await db.query("select sold_at > '2020-06-01' as recent from public.records where id = $1", [id]);
+        expect(rows[0]).toMatchObject({ recent: true });
+      }));
+
+    it("cannot be set by hand on a record that is not sold", () =>
+      inTransaction(async (db) => {
+        const user = await db.newUser();
+        const id = await insertRecord(db, user);
+        await db.query("update public.records set sold_at = now() where id = $1", [id]);
+        const { rows } = await db.query("select sold_at from public.records where id = $1", [id]);
+        expect(rows[0]).toMatchObject({ sold_at: null });
+      }));
+  });
+
+  describe("Facebook sync", () => {
+    it("starts as not posted and in sync", () =>
+      inTransaction(async (db) => {
+        const user = await db.newUser();
+        const id = await insertRecord(db, user);
+        const { rows } = await db.query("select facebook_posted_at, facebook_needs_update from public.records where id = $1", [id]);
+        expect(rows[0]).toMatchObject({ facebook_posted_at: null, facebook_needs_update: false });
+      }));
+
+    it("flags the post for an update when a posted record changes status", () =>
+      inTransaction(async (db) => {
+        const user = await db.newUser();
+        const id = await insertRecord(db, user, { photos: 1, status: "available" });
+        await db.query("update public.records set facebook_posted_at = now() where id = $1", [id]);
+        await db.query("update public.records set status = 'sold' where id = $1", [id]);
+        const { rows } = await db.query("select facebook_needs_update from public.records where id = $1", [id]);
+        expect(rows[0]).toMatchObject({ facebook_needs_update: true });
+      }));
+
+    it("does not flag a record that was never posted", () =>
+      inTransaction(async (db) => {
+        const user = await db.newUser();
+        const id = await insertRecord(db, user, { photos: 1, status: "available" });
+        await db.query("update public.records set status = 'sold' where id = $1", [id]);
+        const { rows } = await db.query("select facebook_needs_update from public.records where id = $1", [id]);
+        expect(rows[0]).toMatchObject({ facebook_needs_update: false });
+      }));
+
+    it("lets the owner mark the post as updated", () =>
+      inTransaction(async (db) => {
+        const user = await db.newUser();
+        const id = await insertRecord(db, user, { photos: 1, status: "available" });
+        await db.query("update public.records set facebook_posted_at = now() where id = $1", [id]);
+        await db.query("update public.records set status = 'sold' where id = $1", [id]);
+        await db.query("update public.records set facebook_needs_update = false where id = $1", [id]);
+        const { rows } = await db.query("select facebook_needs_update from public.records where id = $1", [id]);
+        expect(rows[0]).toMatchObject({ facebook_needs_update: false });
+      }));
+
+    it("is not flagged by edits that keep the status", () =>
+      inTransaction(async (db) => {
+        const user = await db.newUser();
+        const id = await insertRecord(db, user, { photos: 1, status: "available" });
+        await db.query("update public.records set facebook_posted_at = now() where id = $1", [id]);
+        await db.query("update public.records set notes = 'new text' where id = $1", [id]);
+        const { rows } = await db.query("select facebook_needs_update from public.records where id = $1", [id]);
+        expect(rows[0]).toMatchObject({ facebook_needs_update: false });
+      }));
+
+    it("is in sync again when the record is posted anew in the same change", () =>
+      inTransaction(async (db) => {
+        const user = await db.newUser();
+        const id = await insertRecord(db, user, { photos: 1, status: "available" });
+        await db.query("update public.records set facebook_posted_at = '2020-01-01' where id = $1", [id]);
+        await db.query(
+          "update public.records set status = 'unavailable', facebook_posted_at = now(), facebook_needs_update = false where id = $1",
+          [id],
+        );
+        const { rows } = await db.query("select facebook_needs_update from public.records where id = $1", [id]);
+        expect(rows[0]).toMatchObject({ facebook_needs_update: false });
+      }));
+  });
 });

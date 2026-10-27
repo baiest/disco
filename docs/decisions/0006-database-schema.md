@@ -1,6 +1,6 @@
 # 0006: Database schema and security (Phase 1)
 
-Status: accepted
+Status: accepted (the photos table became `record_media` in 0010)
 
 ## Context
 

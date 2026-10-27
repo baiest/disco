@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { databaseUrl, inTransaction } from "./harness/db";
 
 describe.skipIf(databaseUrl() === null)("record-photos bucket", () => {
-  it("is private, small and limited to JPEG and WebP", () =>
+  it("is private, capped at 50 MB and limited to JPEG, WebP and common video types", () =>
     inTransaction(async (db) => {
       const { rows } = await db.query("select * from storage.buckets where id = 'record-photos'");
       expect(rows[0]).toMatchObject({
         public: false,
-        file_size_limit: "5242880",
-        allowed_mime_types: ["image/jpeg", "image/webp"],
+        file_size_limit: "52428800",
+        allowed_mime_types: ["image/jpeg", "image/webp", "video/mp4", "video/quicktime", "video/webm"],
       });
     }));
 
