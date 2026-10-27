@@ -131,7 +131,14 @@
     "copy": "Copia {number} · {status}",
     "publishBanner": "{count, plural, one {# disco sin publicar en Facebook} other {# discos sin publicar en Facebook}}",
     "publishBannerAction": "Publicarlos",
-    "emptyAdd": "Agregar el primer disco"
+    "emptyAdd": "Agregar el primer disco",
+    "deletedNotice": "Disco eliminado.",
+    "deletedUndo": "Deshacer",
+    "deletedDismiss": "Cerrar",
+    "noResultsQuery": "No encontré «{query}»",
+    "noResultsFilter": "No hay discos con este filtro.",
+    "noResultsHint": "Revisa cómo lo escribiste o prueba con menos palabras.",
+    "noResultsAll": "Ver todos los discos"
   },
   "detail": {
     "back": "Volver a tus discos",
@@ -167,7 +174,26 @@
       "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
       "failed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo."
     },
-    "publishOnFacebook": "Publicar en Facebook"
+    "deleteButton": "Eliminar disco",
+    "deleteTitle": "¿Eliminar este disco?",
+    "deleteBody": "Va a desaparecer de tus listas. Podrás deshacerlo justo después.",
+    "deleteBodyFacebook": "Va a desaparecer de tus listas. Podrás deshacerlo justo después. Si ya lo publicaste en Facebook, esa publicación sigue allá y la borras tú.",
+    "deleteConfirm": "Sí, eliminar",
+    "deleteCancel": "No, conservarlo",
+    "deleteError": {
+      "invalid_id": "Algo salió mal. Recarga la página.",
+      "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
+      "not_found": "Ese disco ya no está.",
+      "failed": "No se pudo eliminar. Revisa tu conexión e inténtalo de nuevo."
+    },
+    "seePublic": "Ver cómo lo ve el cliente",
+    "showPricePublic": "Mostrar el precio al público",
+    "showPricePublicHint": "Por defecto el cliente no ve el precio. Enciéndelo solo en los discos donde quieras mostrarlo.",
+    "showPriceNeedsPrice": "Escribe un precio para poder mostrarlo.",
+    "pricePublicError": "No se pudo cambiar. Inténtalo de nuevo.",
+    "batchAdd": "Agregar al lote de Facebook",
+    "batchRemove": "Quitar del lote de Facebook",
+    "batchReview": "Revisar y publicar"
   },
   "publish": {
     "title": "Publicar en Facebook",
@@ -211,6 +237,46 @@
       "failed": "No se pudo guardar que ya lo publicaste. Revisa tu conexión e inténtalo de nuevo."
     },
     "untitled": "Sin título",
-    "sharedPasteHint": "Copiamos tu texto. En Facebook, toca el cuadro de texto, mantén presionado y elige Pegar."
+    "sharedPasteHint": "Copiamos tu texto. En Facebook, toca el cuadro de texto, mantén presionado y elige Pegar.",
+    "batchTitle": "Tu publicación en Facebook",
+    "batchCount": "{records, plural, one {# disco} other {# discos}} · {files} de {max} fotos y videos",
+    "batchReview": "Revisar y publicar",
+    "batchOver": "Pasaste el límite: sobran {extra, plural, one {# foto o video} other {# fotos y videos}}. Quita algún disco.",
+    "batchMore": "{count, plural, one {y # más} other {y # más}}",
+    "reviewTitle": "Revisa tu publicación",
+    "reviewHint": "Estos discos van juntos en un solo post. Puedes quitar o editar alguno antes de publicar.",
+    "edit": "Editar",
+    "removeFromBatch": "Quitar",
+    "addMore": "Agregar más discos",
+    "emptyBatch": "Tu publicación está vacía.",
+    "pickDiscs": "Elegir discos",
+    "filesOfRecord": "{count, plural, one {# foto o video} other {# fotos y videos}}"
+  },
+  "catalog": {
+    "title": "Discos",
+    "intro": "Mira lo que tenemos y pregúntanos por WhatsApp, sin registrarte.",
+    "searchLabel": "Buscar un disco",
+    "searchPlaceholder": "Álbum, artista o nota",
+    "searchButton": "Buscar",
+    "count": "{count, plural, =0 {Ningún disco encontrado} one {# disco} other {# discos}}",
+    "empty": "Todavía no hay discos en el catálogo. Vuelve pronto.",
+    "noResults": "No encontré «{query}». Prueba con menos palabras o pregúntanos por WhatsApp.",
+    "clearSearch": "Ver todos los discos",
+    "closeMatch": "Parecido a lo que escribiste",
+    "untitled": "Sin título",
+    "unknownArtist": "Artista sin anotar",
+    "sold": "Vendido",
+    "loadError": "No pudimos cargar el catálogo. Inténtalo de nuevo en unos minutos.",
+    "back": "Volver al catálogo",
+    "askWhatsapp": "Preguntar por WhatsApp",
+    "whatsappMessage": "Hola, ¿sigue disponible «{title}»?",
+    "whatsappMessageUntitled": "Hola, ¿sigue disponible este disco?",
+    "soldNotice": "Este disco ya se vendió. Pregúntanos si te interesa uno parecido.",
+    "videoLabel": "Video del disco"
+  },
+  "notFound": {
+    "title": "No encontramos esa página",
+    "body": "Puede que el disco ya no esté o que la dirección tenga un error.",
+    "back": "Ir al catálogo"
   }
 }

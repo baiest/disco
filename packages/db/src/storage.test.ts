@@ -41,12 +41,16 @@ describe.skipIf(databaseUrl() === null)("record-photos bucket", () => {
       expect((await db.query("update storage.objects set name = $1 where bucket_id = 'record-photos'", [`${bob}/rec/a.jpg`])).rowCount).toBe(0);
     }));
 
-  it("gives anonymous visitors nothing", () =>
+  it("gives anonymous visitors nothing that does not belong to a public record", () =>
     inTransaction(async (db) => {
       const alice = await db.newUser();
       await db.asAdmin();
       await db.query("insert into storage.objects (bucket_id, name) values ('record-photos', $1)", [`${alice}/rec/a.jpg`]);
       await db.as("anon");
-      expect(await db.fail("select * from storage.objects")).toMatch(/permission denied/);
+      // Anonymous users may query storage on Supabase; the policies decide what comes back.
+      expect((await db.query("select * from storage.objects")).rowCount).toBe(0);
+      expect(await db.fail("insert into storage.objects (bucket_id, name) values ('record-photos', 'x/y/z.jpg')")).toMatch(
+        /row-level security|permission denied/,
+      );
     }));
 });
