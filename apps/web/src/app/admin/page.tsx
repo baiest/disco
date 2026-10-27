@@ -23,7 +23,11 @@ export default async function AdminPage({ searchParams }: Props) {
 
   const rows = await searchInventory(search);
   const cards = rows === null ? [] : buildAlbumCards(rows);
-  const [admin, detail] = await Promise.all([getTranslations("admin"), getTranslations("detail")]);
+  const [admin, detail, publish] = await Promise.all([
+    getTranslations("admin"),
+    getTranslations("detail"),
+    getTranslations("publish"),
+  ]);
   const shortDate = (iso: string | null) =>
     iso === null ? "" : format.dateTime(new Date(iso), { day: "numeric", month: "short" });
 
@@ -146,6 +150,13 @@ export default async function AdminPage({ searchParams }: Props) {
           {t("addNone")}
         </Link>
       )}
+
+      <Link
+        href="/admin/publish"
+        className="flex h-14 items-center justify-center rounded-2xl border-2 border-ink text-base font-bold"
+      >
+        {publish("title")}
+      </Link>
 
       <form action={signOut} className="mt-4">
         <button type="submit" className="h-12 w-full text-base font-semibold underline underline-offset-4">

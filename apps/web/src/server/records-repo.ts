@@ -1,6 +1,8 @@
 import type { CaptureRepo, RepoResult } from "@/lib/capture";
 import type { DiscRecord, MediaKind, RecordStatus } from "@disco/domain";
 import { isSearchRow, type Search, type SearchRow } from "@/lib/inventory";
+import type { PostRepo } from "@/lib/facebook-publish";
+import type { MediaLink } from "@/lib/share-media";
 import type { DetailRepo } from "@/lib/record-detail";
 import { createSupabaseServerClient } from "./supabase/server";
 
@@ -126,6 +128,23 @@ function isRecordRow(value: unknown): value is Record<string, unknown> & { id: s
 
 const text = (value: unknown): string | null => (typeof value === "string" ? value : null);
 
+function toDiscRecord(row: Record<string, unknown> & { id: string; status: RecordStatus }, mediaCount: number): DiscRecord {
+  return {
+    id: row.id,
+    title: text(row["title"]),
+    artist: text(row["artist"]),
+    priceCop: typeof row["price_cop"] === "number" ? row["price_cop"] : null,
+    status: row.status,
+    notes: text(row["notes"]),
+    mediaCount,
+    updatedAt: text(row["updated_at"]) ?? "",
+    deletedAt: null,
+    soldAt: text(row["sold_at"]),
+    facebookPostedAt: text(row["facebook_posted_at"]),
+    facebookNeedsUpdate: row["facebook_needs_update"] === true,
+  };
+}
+
 async function readRecord(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   recordId: string,
@@ -136,20 +155,7 @@ async function readRecord(
     return null;
   }
   const media = await supabase.from("record_media").select("id", { count: "exact", head: true }).eq("record_id", recordId);
-  return {
-    id: row.id,
-    title: text(row["title"]),
-    artist: text(row["artist"]),
-    priceCop: typeof row["price_cop"] === "number" ? row["price_cop"] : null,
-    status: row.status,
-    notes: text(row["notes"]),
-    mediaCount: media.count ?? 0,
-    updatedAt: text(row["updated_at"]) ?? "",
-    deletedAt: null,
-    soldAt: text(row["sold_at"]),
-    facebookPostedAt: text(row["facebook_posted_at"]),
-    facebookNeedsUpdate: row["facebook_needs_update"] === true,
-  };
+  return toDiscRecord(row, media.count ?? 0);
 }
 
 /** Reads and edits one record as the signed in user. */
@@ -220,4 +226,81 @@ export async function loadRecordDetail(recordId: string): Promise<RecordDetail |
     return url === undefined ? [] : [{ id: item.id, kind: item.kind, url }];
   });
   return { record, media };
+}
+
+export async function createPostRepo(): Promise<PostRepo> {
+  const supabase = await createSupabaseServerClient();
+  return {
+    async currentUserId() {
+      const { data } = await supabase.auth.getUser();
+      return data.user?.id ?? null;
+    },
+    async markPosted(recordIds) {
+      const { data, error } = await supabase
+        .from("records")
+        .update({ facebook_posted_at: new Date().toISOString(), facebook_needs_update: false })
+        .in("id", recordIds)
+        .select("id");
+      return error === null && Array.isArray(data) && data.length === recordIds.length ? OK : { ok: false, reason: "other" };
+    },
+  };
+}
+
+export interface PostItem {
+  record: DiscRecord;
+  media: MediaLink[];
+}
+
+/** The available records among `recordIds` with their files as links, in the order asked. */
+export async function loadPostItems(recordIds: string[]): Promise<PostItem[]> {
+  if (recordIds.length === 0) {
+    return [];
+  }
+  const supabase = await createSupabaseServerClient();
+  const found = await supabase
+    .from("records")
+    .select(RECORD_COLUMNS)
+    .in("id", recordIds)
+    .eq("status", "available")
+    .is("deleted_at", null);
+  const rows: unknown[] = Array.isArray(found.data) ? found.data : [];
+  const records = rows.filter(isRecordRow);
+  if (records.length === 0) {
+    return [];
+  }
+  const listed = await supabase
+    .from("record_media")
+    .select("id, record_id, kind, storage_path")
+    .in("record_id", records.map((row) => row.id))
+    .order("position");
+  const list: unknown[] = Array.isArray(listed.data) ? listed.data : [];
+  const files = list.flatMap((entry): { id: string; recordId: string; kind: MediaKind; path: string }[] => {
+    const row = entry as Record<string, unknown>;
+    const kind = row["kind"];
+    return typeof row["id"] === "string" &&
+      typeof row["record_id"] === "string" &&
+      typeof row["storage_path"] === "string" &&
+      (kind === "photo" || kind === "video")
+      ? [{ id: row["id"], recordId: row["record_id"], kind, path: row["storage_path"] }]
+      : [];
+  });
+  const signed = await supabase.storage.from(BUCKET).createSignedUrls(
+    files.map((file) => file.path),
+    SIGNED_URL_SECONDS,
+  );
+  const urls = new Map(
+    (signed.data ?? []).flatMap((entry) => (entry.path !== null && entry.signedUrl ? [[entry.path, entry.signedUrl] as const] : [])),
+  );
+  const byId = new Map(records.map((row) => [row.id, row]));
+  return recordIds.flatMap((id): PostItem[] => {
+    const row = byId.get(id);
+    if (row === undefined) {
+      return [];
+    }
+    const media = files.flatMap((file): MediaLink[] => {
+      const url = urls.get(file.path);
+      return file.recordId === id && url !== undefined ? [{ id: file.id, kind: file.kind, url }] : [];
+    });
+    return [{ record: toDiscRecord(row, media.length), media }];
+  });
 }

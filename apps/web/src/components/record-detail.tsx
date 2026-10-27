@@ -2,6 +2,7 @@
 
 import type { RecordInput, RecordInputError, RecordInputField, RecordStatus } from "@disco/domain";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { changeStatusAction, saveFieldsAction, undoStatusAction } from "@/app/admin/records/[id]/actions";
 
@@ -163,6 +164,14 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
             ))
           )}
         </div>
+        {status === "available" && (
+          <Link
+            href={`/admin/publish?ids=${recordId}`}
+            className="flex h-14 items-center justify-center rounded-2xl bg-accent text-lg font-bold text-accent-ink"
+          >
+            {t("publishOnFacebook")}
+          </Link>
+        )}
         {undo !== null && (
           <div role="status" className="flex items-center justify-between gap-3 rounded-2xl bg-ink px-4 py-3 text-accent-ink">
             <span className="text-base font-bold">{t("changed", { status: t(`status.${undo.next}`) })}</span>
