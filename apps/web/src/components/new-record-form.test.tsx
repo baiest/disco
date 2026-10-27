@@ -299,5 +299,72 @@ describe("NewRecordForm", () => {
       );
     });
   });
+
+  describe("the photo boxes", () => {
+    const boxes = () => screen.queryAllByRole("button", { name: messages.capture.addMedia });
+
+    it("shows one dashed box for every place left, up to eight", () => {
+      renderForm();
+      expect(boxes()).toHaveLength(8);
+    });
+
+    it("takes a box away for each file added", async () => {
+      renderForm();
+      pickPhoto();
+      await waitFor(() => {
+        expect(boxes()).toHaveLength(7);
+      });
+    });
+
+    it("asks camera, video or gallery when a box is tapped", () => {
+      renderForm();
+      expect(screen.queryByRole("dialog")).toBeNull();
+      fireEvent.click(boxes()[0] as HTMLElement);
+      expect(screen.getByRole("dialog", { name: messages.capture.sheet.title })).toBeTruthy();
+      expect(screen.getByRole("button", { name: messages.capture.sheet.camera })).toBeTruthy();
+      expect(screen.getByRole("button", { name: messages.capture.sheet.video })).toBeTruthy();
+      expect(screen.getByRole("button", { name: messages.capture.sheet.gallery })).toBeTruthy();
+    });
+
+    it.each([
+      ["camera", 'input[accept="image/*"][capture]'],
+      ["video", 'input[accept="video/*"][capture]'],
+      ["gallery", 'input[accept="image/*,video/*"]'],
+    ] as const)("opens the %s picker and closes the question", (option, selector) => {
+      const click = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => undefined);
+      const { container } = renderForm();
+      fireEvent.click(boxes()[0] as HTMLElement);
+      fireEvent.click(screen.getByRole("button", { name: messages.capture.sheet[option] }));
+      expect(click).toHaveBeenCalledTimes(1);
+      expect(click.mock.instances[0]).toBe(container.querySelector(selector));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      click.mockRestore();
+    });
+
+    it("lets the gallery pick several files at once", () => {
+      const { container } = renderForm();
+      expect(container.querySelector<HTMLInputElement>('input[accept="image/*,video/*"]')?.multiple).toBe(true);
+    });
+
+    it("opens nothing when the owner cancels", () => {
+      const click = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => undefined);
+      renderForm();
+      fireEvent.click(boxes()[0] as HTMLElement);
+      fireEvent.click(screen.getByRole("button", { name: messages.capture.sheet.cancel }));
+      expect(click).not.toHaveBeenCalled();
+      expect(screen.queryByRole("dialog")).toBeNull();
+      click.mockRestore();
+    });
+
+    it("has no box left when the eight places are used", async () => {
+      renderForm();
+      for (let i = 0; i < 8; i += 1) {
+        pickPhoto();
+      }
+      await waitFor(() => {
+        expect(boxes()).toHaveLength(0);
+      });
+    });
+  });
 });
 

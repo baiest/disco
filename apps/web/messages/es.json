@@ -35,9 +35,6 @@
     "title": "Disco nuevo",
     "mediaTitle": "Fotos y videos",
     "mediaCount": "{count} de {max}",
-    "takePhoto": "Tomar foto",
-    "recordVideo": "Grabar video",
-    "chooseGallery": "Elegir de la galería",
     "mediaHint": "Hasta {max} entre fotos y videos. Una foto basta para guardarlo.",
     "removeMedia": "Quitar",
     "retryMedia": "Reintentar",
@@ -96,6 +93,14 @@
       "not_found": "Esa foto ya no estaba.",
       "last_media": "Un disco publicado necesita al menos una foto o un video.",
       "failed": "No se pudo quitar. Revisa tu conexión e inténtalo de nuevo."
+    },
+    "addMedia": "Agregar foto o video",
+    "sheet": {
+      "title": "¿Cómo quieres agregarlo?",
+      "camera": "Cámara",
+      "video": "Grabar video",
+      "gallery": "Galería",
+      "cancel": "Cancelar"
     }
   },
   "inventory": {
