@@ -135,8 +135,6 @@
     },
     "addNone": "No es ninguno: agregar este disco",
     "copy": "Copia {number} · {status}",
-    "publishBanner": "{count, plural, one {# disco sin publicar en Facebook} other {# discos sin publicar en Facebook}}",
-    "publishBannerAction": "Publicarlos",
     "emptyAdd": "Agregar el primer disco",
     "deletedNotice": "Disco eliminado.",
     "deletedUndo": "Deshacer",

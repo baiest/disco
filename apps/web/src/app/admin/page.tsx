@@ -10,7 +10,7 @@ import { EmptyResults } from "@/components/empty-results";
 import { InstallHint } from "@/components/install-hint";
 import { buildAlbumCards, FILTERS, parseSearch } from "@/lib/inventory";
 import { parseIds } from "@/lib/facebook-post";
-import { countUnposted, isRecordDeleted, searchInventory, signThumbnails } from "@/server/records-repo";
+import { isRecordDeleted, searchInventory, signThumbnails } from "@/server/records-repo";
 import { getCurrentUserId } from "@/server/supabase/current-user";
 
 type Props = { searchParams: Promise<{ q?: string | string[]; filter?: string | string[]; undo?: string | string[] }> };
@@ -26,9 +26,8 @@ export default async function AdminPage({ searchParams }: Props) {
 
   const isPlainList = search.query === "" && search.filter === "all";
   const undoId = parseIds(params.undo)[0];
-  const [rows, unposted, deleted] = await Promise.all([
+  const [rows, deleted] = await Promise.all([
     searchInventory(search),
-    isPlainList ? countUnposted() : 0,
     undoId === undefined ? false : isRecordDeleted(undoId),
   ]);
   const cards = rows === null ? [] : buildAlbumCards(rows);
@@ -91,16 +90,6 @@ export default async function AdminPage({ searchParams }: Props) {
           );
         })}
       </nav>
-
-      {unposted > 0 && (
-        <Link
-          href="/admin/publish"
-          className="flex min-h-16 items-center justify-between gap-3 rounded-2xl border-2 border-accent bg-accent-soft px-4 py-3"
-        >
-          <span className="text-base font-bold">{t("publishBanner", { count: unposted })}</span>
-          <span className="shrink-0 text-base font-bold text-accent underline underline-offset-4">{t("publishBannerAction")}</span>
-        </Link>
-      )}
 
       {rows === null ? (
         <p role="alert" className="text-base font-bold text-danger">

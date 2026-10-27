@@ -35,3 +35,10 @@ composer. Copying took a separate tap that was easy to skip, so the text showed 
 The "Abrir Facebook con las fotos" button now copies the text first (the clipboard stops working for a
 page once the share sheet is open), then opens the sheet, and tells the owner to paste in Facebook. The
 text also goes along in the share for apps that do use it, such as WhatsApp. With no text, nothing is copied.
+
+## Update: no reminder banner on the home screen
+
+The home screen used to show "N discos sin publicar en Facebook" with a "Publicarlos" link. It got in the
+way every day, so it was removed (and its extra database query with it). Publishing stays one tap away:
+"Publicar en Facebook" is in the menu, a record's page can add it to the batch, and the "Sin publicar en
+Facebook" filter still lists what has never been posted.
