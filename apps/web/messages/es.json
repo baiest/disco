@@ -79,5 +79,31 @@
     },
     "saved": "Guardado. Puedes seguir con otro disco.",
     "restored": "Recuperamos lo que habías escrito."
+  },
+  "inventory": {
+    "searchLabel": "Buscar un disco",
+    "searchPlaceholder": "Álbum, artista o nota",
+    "searchButton": "Buscar",
+    "filters": {
+      "all": "Todos",
+      "available": "Disponibles",
+      "sold": "Vendidos",
+      "no_price": "Sin precio",
+      "not_on_facebook": "Sin publicar en Facebook"
+    },
+    "count": "{count, plural, =0 {Ningún disco encontrado} one {# disco encontrado} other {# discos encontrados}}",
+    "empty": "Todavía no hay discos. Agrega el primero.",
+    "loadError": "No pudimos cargar tus discos. Revisa tu conexión e inténtalo de nuevo.",
+    "untitled": "Sin título",
+    "unknownArtist": "Artista sin anotar",
+    "closeMatch": "Parecido a lo que escribiste",
+    "chip": {
+      "inStock": "Lo tienes: {count, plural, one {# disponible} other {# disponibles}}",
+      "soldOut": "No lo tienes ahora: {count, plural, one {# vendido} other {# vendidos}} el {date}",
+      "sold": "{count, plural, one {# vendido} other {# vendidos}} el {date}",
+      "unavailable": "{count, plural, one {# no disponible} other {# no disponibles}}",
+      "drafts": "{count, plural, one {# borrador} other {# borradores}}"
+    },
+    "addNone": "No es ninguno: agregar este disco"
   }
 }

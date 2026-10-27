@@ -1,8 +1,11 @@
 import type { CaptureRepo, RepoResult } from "@/lib/capture";
+import { isSearchRow, type Search, type SearchRow } from "@/lib/inventory";
 import { createSupabaseServerClient } from "./supabase/server";
 
 /** The storage bucket keeps its first name even though it now holds videos too. */
 const BUCKET = "record-photos";
+
+const INVENTORY_LIMIT = 100;
 
 const OK: RepoResult = { ok: true };
 
@@ -85,4 +88,23 @@ export async function createCaptureRepo(): Promise<CaptureRepo> {
       return Array.isArray(data) && data.length > 0 ? OK : { ok: false, reason: "other" };
     },
   };
+}
+
+/**
+ * Searches the owner's records (see the `search_records` database function). Returns null when
+ * the search could not run, so the screen can say so instead of showing an empty list.
+ */
+export async function searchInventory(search: Search): Promise<SearchRow[] | null> {
+  const supabase = await createSupabaseServerClient();
+  const result = await supabase.rpc("search_records", {
+    p_query: search.query,
+    p_filter: search.filter,
+    p_limit: INVENTORY_LIMIT,
+  });
+  if (result.error !== null) {
+    return null;
+  }
+  const data: unknown = result.data;
+  const rows: unknown[] = Array.isArray(data) ? data : [];
+  return rows.filter(isSearchRow);
 }
