@@ -89,6 +89,30 @@ export async function createCaptureRepo(): Promise<CaptureRepo> {
       }
       return Array.isArray(data) && data.length > 0 ? OK : { ok: false, reason: "other" };
     },
+
+    async deleteMedia(recordId, mediaId) {
+      const found = await supabase
+        .from("record_media")
+        .select("storage_path")
+        .eq("id", mediaId)
+        .eq("record_id", recordId)
+        .maybeSingle();
+      const row: unknown = found.data;
+      const path = typeof row === "object" && row !== null ? (row as Record<string, unknown>)["storage_path"] : null;
+      if (found.error !== null || typeof path !== "string") {
+        return { ok: false, reason: found.error === null ? "not_found" : "other" };
+      }
+      // The row goes first: the database refuses to take the last file off a published record.
+      const deleted = await supabase.from("record_media").delete().eq("id", mediaId).eq("record_id", recordId);
+      if (deleted.error !== null) {
+        return { ok: false, reason: deleted.error.message.includes("at least one photo or video") ? "last_media" : "other" };
+      }
+      const file = await supabase.storage.from(BUCKET).remove([path]);
+      if (file.error !== null) {
+        console.error("Stored file could not be removed", path, file.error.message);
+      }
+      return { ok: true };
+    },
   };
 }
 
@@ -206,24 +230,35 @@ export interface RecordDetail {
 }
 
 /** A record with its photos and videos, as links that work for an hour. Null when it does not exist. */
+type MediaRow = { id: string; kind: MediaKind; path: string; position: number };
+
+function parseMediaRows(list: unknown[]): MediaRow[] {
+  return list.flatMap((entry): MediaRow[] => {
+    const row = entry as Record<string, unknown>;
+    const kind = row["kind"];
+    return typeof row["id"] === "string" &&
+      typeof row["storage_path"] === "string" &&
+      typeof row["position"] === "number" &&
+      (kind === "photo" || kind === "video")
+      ? [{ id: row["id"], kind, path: row["storage_path"], position: row["position"] }]
+      : [];
+  });
+}
+
+const MEDIA_COLUMNS = "id, kind, storage_path, position";
+
 export async function loadRecordDetail(recordId: string): Promise<RecordDetail | null> {
   const supabase = await createSupabaseServerClient();
   // The record and its files are asked for together; the file count comes from the list itself.
   const [row, listed] = await Promise.all([
     readRecordRow(supabase, recordId),
-    supabase.from("record_media").select("id, kind, storage_path").eq("record_id", recordId).order("position"),
+    supabase.from("record_media").select(MEDIA_COLUMNS).eq("record_id", recordId).order("position"),
   ]);
   if (row === null) {
     return null;
   }
   const list: unknown[] = Array.isArray(listed.data) ? listed.data : [];
-  const items = list.flatMap((entry): { id: string; kind: MediaKind; path: string }[] => {
-    const row = entry as Record<string, unknown>;
-    const kind = row["kind"];
-    return typeof row["id"] === "string" && typeof row["storage_path"] === "string" && (kind === "photo" || kind === "video")
-      ? [{ id: row["id"], kind, path: row["storage_path"] }]
-      : [];
-  });
+  const items = parseMediaRows(list);
   const urls = await signedUrlMap(
     supabase,
     items.map((item) => item.path),
@@ -233,6 +268,37 @@ export async function loadRecordDetail(recordId: string): Promise<RecordDetail |
     return url === undefined ? [] : [{ id: item.id, kind: item.kind, url }];
   });
   return { record: toDiscRecord(row, list.length), media };
+}
+
+export interface RestoredMedia {
+  id: string;
+  kind: MediaKind;
+  url: string;
+  position: number;
+}
+
+/**
+ * The files already uploaded to a draft, so the capture form can show them again after the page
+ * is reloaded. Empty when the record does not exist or is no longer a draft.
+ */
+export async function loadDraftMedia(recordId: string): Promise<RestoredMedia[]> {
+  const supabase = await createSupabaseServerClient();
+  const [row, listed] = await Promise.all([
+    readRecordRow(supabase, recordId),
+    supabase.from("record_media").select(MEDIA_COLUMNS).eq("record_id", recordId).order("position"),
+  ]);
+  if (row === null || row.status !== "draft") {
+    return [];
+  }
+  const items = parseMediaRows(Array.isArray(listed.data) ? listed.data : []);
+  const urls = await signedUrlMap(
+    supabase,
+    items.map((item) => item.path),
+  );
+  return items.flatMap((item): RestoredMedia[] => {
+    const url = urls.get(item.path);
+    return url === undefined ? [] : [{ id: item.id, kind: item.kind, url, position: item.position }];
+  });
 }
 
 export async function createPostRepo(): Promise<PostRepo> {

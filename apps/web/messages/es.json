@@ -89,7 +89,14 @@
     },
     "saved": "Guardado. Puedes seguir con otro disco.",
     "restored": "Recuperamos lo que habías escrito.",
-    "publishBatch": "{count, plural, one {Publicar este disco en Facebook} other {Publicar estos # discos en Facebook}}"
+    "publishBatch": "{count, plural, one {Publicar este disco en Facebook} other {Publicar estos # discos en Facebook}}",
+    "removeError": {
+      "invalid_id": "Algo salió mal. Recarga la página.",
+      "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
+      "not_found": "Esa foto ya no estaba.",
+      "last_media": "Un disco publicado necesita al menos una foto o un video.",
+      "failed": "No se pudo quitar. Revisa tu conexión e inténtalo de nuevo."
+    }
   },
   "inventory": {
     "searchLabel": "Buscar un disco",

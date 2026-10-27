@@ -14,7 +14,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useReducer, useRef, useState, type ChangeEvent } from "react";
 import {
+  loadDraftMediaAction,
   registerMediaAction,
+  removeMediaAction,
   requestUploadAction,
   saveRecordAction,
 } from "@/app/admin/records/new/actions";
@@ -39,10 +41,16 @@ const FIELDS = [
   { name: "priceText", label: "price", placeholder: "pricePlaceholder" },
 ] as const;
 
+const REMOVE_ERRORS = ["invalid_id", "unauthenticated", "not_found", "last_media", "failed"] as const;
+
 const FAILURES = [
   "unsupported_type", "empty", "too_big", "too_long", "duration_unknown", "too_many",
   "too_many_videos", "not_uploaded", "invalid_id", "unauthenticated", "failed",
 ] as const;
+
+function known<T extends string>(list: readonly T[], value: string, fallback: T): T {
+  return list.find((item) => item === value) ?? fallback;
+}
 
 function failureKey(reason: string | undefined): (typeof FAILURES)[number] {
   return FAILURES.find((known) => known === reason) ?? "failed";
@@ -67,6 +75,7 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
 
   const jobs = useRef(new Map<string, UploadMediaJob>());
   const durationWaiters = useRef(new Map<string, (seconds: number | undefined) => void>());
+  const removedWhileUploading = useRef(new Set<string>());
   const draftReady = useRef<Promise<boolean> | null>(null);
   const fieldsRef = useRef(fields);
   const recordIdRef = useRef(recordId);
@@ -83,6 +92,15 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
       setRecordId(draft.recordId);
       setFields(draft.fields);
       setNotice(t("restored"));
+      // Files uploaded before the page was reloaded are still on the server; show them again.
+      void loadDraftMediaAction(draft.recordId).then((files) => {
+        if (files.length > 0) {
+          dispatch({
+            type: "restore",
+            items: files.map((file) => ({ id: file.id, kind: file.kind, previewUrl: file.url, position: file.position })),
+          });
+        }
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, on load
   }, []);
@@ -110,7 +128,7 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
 
   async function upload(id: string) {
     const job = jobs.current.get(id);
-    if (job === undefined) {
+    if (job === undefined || removedWhileUploading.current.has(id)) {
       return;
     }
     dispatch({ type: "status", id, status: "uploading" });
@@ -135,7 +153,11 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
         },
       },
     );
-    if (result.ok) {
+    if (result.ok && removedWhileUploading.current.has(id)) {
+      // The owner took it off while it was still going up; now that it landed, delete it.
+      removedWhileUploading.current.delete(id);
+      await removeMediaAction({ recordId: recordIdRef.current, mediaId: id });
+    } else if (result.ok) {
       dispatch({ type: "status", id, status: "done", position: result.position });
     } else {
       dispatch({ type: "failed", id, reason: result.reason });
@@ -219,9 +241,18 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
     void upload(id);
   }
 
-  function remove(id: string) {
-    jobs.current.delete(id);
-    dispatch({ type: "remove", id });
+  async function remove(item: MediaItem) {
+    if (item.status === "done") {
+      const result = await removeMediaAction({ recordId: recordIdRef.current, mediaId: item.id });
+      if (!result.ok && result.reason !== "not_found") {
+        setNotice(t(`removeError.${known(REMOVE_ERRORS, result.reason, "failed")}`));
+        return;
+      }
+    } else if (item.status === "preparing" || item.status === "uploading") {
+      removedWhileUploading.current.add(item.id);
+    }
+    jobs.current.delete(item.id);
+    dispatch({ type: "remove", id: item.id });
   }
 
   const busy = uploadsInProgress(items);
@@ -318,7 +349,7 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
                 type="button"
                 aria-label={t("removeMedia")}
                 onClick={() => {
-                  remove(item.id);
+                  void remove(item);
                 }}
                 className="absolute right-1 top-1 size-8 rounded-full bg-ink/80 font-bold text-accent-ink"
               >

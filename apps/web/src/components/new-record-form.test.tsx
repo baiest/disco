@@ -7,6 +7,8 @@ const actions = vi.hoisted(() => ({
   saveRecordAction: vi.fn(),
   requestUploadAction: vi.fn(),
   registerMediaAction: vi.fn(),
+  removeMediaAction: vi.fn(),
+  loadDraftMediaAction: vi.fn(),
 }));
 const push = vi.hoisted(() => vi.fn());
 
@@ -48,6 +50,8 @@ beforeEach(() => {
     upload: { path: "p", signedUrl: "https://s/u", position: 0, kind: "photo", durationSeconds: null },
   });
   actions.registerMediaAction.mockResolvedValue({ ok: true, position: 0 });
+  actions.removeMediaAction.mockResolvedValue({ ok: true });
+  actions.loadDraftMediaAction.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -170,5 +174,89 @@ describe("NewRecordForm", () => {
       expect(push).toHaveBeenCalledWith("/admin");
     });
     expect(actions.saveRecordAction).toHaveBeenCalledWith(expect.objectContaining({ publish: false }));
+  });
+
+  describe("taking a file off the record", () => {
+    const removeButton = () => screen.getByRole<HTMLButtonElement>("button", { name: messages.capture.removeMedia });
+
+    it("deletes a file that already uploaded, from the server too", async () => {
+      renderForm();
+      pickPhoto();
+      await waitFor(() => {
+        expect(saveButton().disabled).toBe(false);
+      });
+      fireEvent.click(removeButton());
+      await waitFor(() => {
+        expect(screen.queryByRole("button", { name: messages.capture.removeMedia })).toBeNull();
+      });
+      expect(actions.removeMediaAction).toHaveBeenCalledWith({ recordId: expect.any(String) as string, mediaId: expect.any(String) as string });
+      expect(saveButton().disabled).toBe(true);
+    });
+
+    it("keeps the file and explains when it could not be deleted", async () => {
+      actions.removeMediaAction.mockResolvedValue({ ok: false, reason: "failed" });
+      renderForm();
+      pickPhoto();
+      await waitFor(() => {
+        expect(saveButton().disabled).toBe(false);
+      });
+      fireEvent.click(removeButton());
+      await waitFor(() => {
+        expect(screen.getByText(messages.capture.removeError.failed)).toBeTruthy();
+      });
+      expect(removeButton()).toBeTruthy();
+    });
+
+    it("does not call the server for a file that never uploaded", async () => {
+      actions.registerMediaAction.mockResolvedValue({ ok: false, reason: "not_uploaded" });
+      renderForm();
+      pickPhoto();
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: messages.capture.retryMedia })).toBeTruthy();
+      });
+      fireEvent.click(removeButton());
+      expect(screen.queryByRole("button", { name: messages.capture.removeMedia })).toBeNull();
+      expect(actions.removeMediaAction).not.toHaveBeenCalled();
+    });
+
+    it("deletes a file removed while it was still uploading, once it lands", async () => {
+      let finish: (value: { ok: true; position: number }) => void = () => undefined;
+      actions.registerMediaAction.mockReturnValue(
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+      );
+      renderForm();
+      pickPhoto();
+      await waitFor(() => {
+        expect(actions.registerMediaAction).toHaveBeenCalled();
+      });
+      fireEvent.click(removeButton());
+      expect(screen.queryByRole("button", { name: messages.capture.removeMedia })).toBeNull();
+      expect(actions.removeMediaAction).not.toHaveBeenCalled();
+      finish({ ok: true, position: 0 });
+      await waitFor(() => {
+        expect(actions.removeMediaAction).toHaveBeenCalledTimes(1);
+      });
+    });
+  });
+
+  it("shows again the files uploaded before the page was reloaded", async () => {
+    localStorage.setItem(
+      "disco:draft",
+      JSON.stringify({ recordId: "3f2b8a52-9c1e-4d3a-8f6b-1a2b3c4d5e6f", fields: { title: "Ritmo", artist: "", priceText: "", notes: "" } }),
+    );
+    actions.loadDraftMediaAction.mockResolvedValue([{ id: "m1", kind: "photo", url: "https://s/m1.jpg", position: 0 }]);
+    const { container } = renderForm();
+    await waitFor(() => {
+      expect(container.querySelector("img")?.getAttribute("src")).toBe("https://s/m1.jpg");
+    });
+    expect(actions.loadDraftMediaAction).toHaveBeenCalledWith("3f2b8a52-9c1e-4d3a-8f6b-1a2b3c4d5e6f");
+    expect(saveButton().disabled).toBe(false);
+  });
+
+  it("asks for nothing when there was no draft", () => {
+    renderForm();
+    expect(actions.loadDraftMediaAction).not.toHaveBeenCalled();
   });
 });
