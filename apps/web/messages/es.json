@@ -220,9 +220,6 @@
     "soldLabel": "VENDIDO",
     "textLabel": "Texto de la publicación",
     "textHint": "Escribe lo que quieras decir, como en cualquier publicación.",
-    "copy": "Copiar el texto",
-    "copied": "Texto copiado.",
-    "copyFailed": "No se pudo copiar. Selecciona el texto y cópialo a mano.",
     "share": "Abrir Facebook con las fotos",
     "loadingFiles": "Preparando las fotos y videos…",
     "loadFailed": "No pudimos preparar las fotos. Revisa tu conexión e inténtalo de nuevo.",
@@ -232,8 +229,6 @@
     "shareFailed": "No se pudo abrir el menú para compartir. Guarda las fotos aquí abajo y adjúntalas en Facebook.",
     "saveFiles": "Guardar las fotos y videos",
     "saveFile": "Abrir {number} de {total}",
-    "pasteStep": "En Facebook, pega el texto y publica.",
-    "note": "Facebook no deja que otra aplicación publique por ti en un perfil personal. Por eso lo haces tú, en dos toques.",
     "done": "Ya lo publiqué",
     "doneError": {
       "invalid_ids": "Algo salió mal. Recarga la página.",

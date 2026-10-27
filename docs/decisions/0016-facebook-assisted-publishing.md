@@ -42,3 +42,10 @@ The home screen used to show "N discos sin publicar en Facebook" with a "Publica
 way every day, so it was removed (and its extra database query with it). Publishing stays one tap away:
 "Publicar en Facebook" is in the menu, a record's page can add it to the batch, and the "Sin publicar en
 Facebook" filter still lists what has never been posted.
+
+## Update: one button instead of three steps
+
+Opening the share sheet already copies the text by itself, and the hint shown afterwards says to paste it.
+The separate "Copiar el texto" step and the "pega el texto y publica" step were removed; the screen is the
+text box and one button, "Abrir Facebook con las fotos".
+The grey explanation about Facebook not allowing apps to post was removed too: it only got in the way.

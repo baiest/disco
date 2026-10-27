@@ -44,24 +44,16 @@ afterEach(() => {
 });
 
 describe("FacebookComposer", () => {
-  it("copies the text", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    stubNavigator({ clipboard: { writeText } });
-    renderComposer();
-    fireEvent.click(button(messages.publish.copy));
-    await waitFor(() => {
-      expect(screen.getByText(messages.publish.copied)).toBeTruthy();
-    });
-    expect(writeText).toHaveBeenCalledWith("hola");
-  });
-
-  it("says when the text could not be copied", async () => {
+  it("has a single button to open Facebook, with no separate copy or paste step", () => {
     stubNavigator({});
     renderComposer();
-    fireEvent.click(button(messages.publish.copy));
-    await waitFor(() => {
-      expect(screen.getByText(messages.publish.copyFailed)).toBeTruthy();
-    });
+    expect(screen.getAllByRole("button").map((item) => item.textContent)).toEqual([
+      messages.publish.loadingFiles,
+      messages.publish.done,
+    ]);
+    expect(screen.queryByRole("list")).toBeNull();
+    expect(screen.queryByText("Copiar el texto")).toBeNull();
+    expect(screen.queryByText("En Facebook, pega el texto y publica.")).toBeNull();
   });
 
   it("shares the files once they are ready", async () => {
