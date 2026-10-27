@@ -22,6 +22,15 @@ pnpm dev                              # http://localhost:3000
 Quality gates, also run in CI: `pnpm lint`, `pnpm typecheck`, `pnpm test`,
 `pnpm build`, `pnpm audit:high`.
 
+## Languages
+
+The interface is in Spanish today and ready for more languages with `next-intl`.
+To add one (for example English): copy `apps/web/messages/es.json` to
+`apps/web/messages/en.json`, translate every text keeping the `{placeholders}`,
+and add `"en"` to `apps/web/src/i18n/locales.ts`. The language comes from the
+`NEXT_LOCALE` cookie, then the browser language, then Spanish. A test fails if a
+language file misses a key or a placeholder.
+
 ## Database
 
 The schema lives in `supabase/migrations` (records, record photos, row level
