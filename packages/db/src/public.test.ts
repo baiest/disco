@@ -233,7 +233,9 @@ describe.skipIf(databaseUrl() === null)("public catalog", () => {
         await db.asAdmin();
         await insertMedia(db, owner, lavoe, 5, "video");
         await db.as("anon");
-        const { rows } = await db.query("select * from public.public_record_media($1)", [lavoe]);
+        const { rows } = (await db.query("select * from public.public_record_media($1)", [lavoe])) as {
+          rows: { position: number; kind: string }[];
+        };
         expect(rows.map((r) => r.position)).toEqual([0, 1, 5]);
         expect(rows.map((r) => r.kind)).toEqual(["photo", "photo", "video"]);
         expect(Object.keys(rows[0] as object).sort()).toEqual(["id", "kind", "position", "storage_path"]);
@@ -246,32 +248,31 @@ describe.skipIf(databaseUrl() === null)("public catalog", () => {
       inTransaction(async (db) => {
         const { lavoe, draft, hidden, deleted } = await seed(db);
         await db.asAdmin();
-        const paths = async (recordId: string) =>
-          (await db.query("select storage_path from public.record_media where record_id = $1", [recordId])).rows.map((r) => r.storage_path as string);
+        const pathsOf = async (recordId: string) =>
+          ((await db.query("select storage_path from public.record_media where record_id = $1", [recordId])) as {
+            rows: { storage_path: string }[];
+          }).rows.map((r) => r.storage_path);
         for (const id of [lavoe, draft, hidden, deleted]) {
-          for (const path of await paths(id)) {
+          for (const path of await pathsOf(id)) {
             await db.query("insert into storage.objects (bucket_id, name) values ('record-photos', $1)", [path]);
           }
         }
         await db.query("insert into storage.objects (bucket_id, name) values ('record-photos', 'someone/else/unlinked.jpg')");
+        const expected = (await pathsOf(lavoe)).sort();
 
         await db.as("anon");
-        const seen = (await db.query("select name from storage.objects where bucket_id = 'record-photos'")).rows.map((r) => r.name as string).sort();
-        expect(seen).toEqual((await (async () => {
-          await db.asAdmin();
-          const own = await paths(lavoe);
-          await db.as("anon");
-          return own;
-        })()).sort());
+        const { rows } = (await db.query("select name from storage.objects where bucket_id = 'record-photos'")) as {
+          rows: { name: string }[];
+        };
+        expect(rows.map((r) => r.name).sort()).toEqual(expected);
       }));
 
     it("does not let a visitor write or delete stored files", () =>
       inTransaction(async (db) => {
-        const { lavoe } = await seed(db);
+        await seed(db);
         await db.as("anon");
         expect(await db.fail("insert into storage.objects (bucket_id, name) values ('record-photos', 'x/y/z.jpg')")).toMatch(/row-level security|permission denied/);
         expect((await db.query("delete from storage.objects where bucket_id = 'record-photos'")).rowCount).toBe(0);
-        void lavoe;
       }));
   });
 });
