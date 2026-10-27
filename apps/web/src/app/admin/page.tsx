@@ -7,6 +7,7 @@ import { BatchSummaryCard } from "@/components/batch-summary-card";
 import { BottomBar } from "@/components/bottom-bar";
 import { DeletedNotice } from "@/components/deleted-notice";
 import { EmptyResults } from "@/components/empty-results";
+import { InstallHint } from "@/components/install-hint";
 import { buildAlbumCards, FILTERS, parseSearch } from "@/lib/inventory";
 import { parseIds } from "@/lib/facebook-post";
 import { countUnposted, isRecordDeleted, searchInventory, signThumbnails } from "@/server/records-repo";
@@ -39,6 +40,8 @@ export default async function AdminPage({ searchParams }: Props) {
         <h1 className="font-display text-3xl font-extrabold">{admin("title")}</h1>
         <AccountMenu />
       </header>
+
+      <InstallHint />
 
       {undoId !== undefined && deleted && <DeletedNotice recordId={undoId} />}
 

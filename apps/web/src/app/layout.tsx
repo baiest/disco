@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = { title: "Disco" };
-export const viewport: Viewport = { width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#b8420f" };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const locale = await getLocale();

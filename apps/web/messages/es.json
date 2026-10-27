@@ -31,6 +31,12 @@
     "addRecord": "Agregar disco",
     "menuLabel": "Menú"
   },
+  "install": {
+    "title": "Ten Disco en la pantalla de inicio",
+    "android": "En Chrome toca los tres puntos de arriba y elige «Instalar app» o «Agregar a la pantalla de inicio».",
+    "ios": "En Safari toca el botón Compartir y elige «Agregar a inicio».",
+    "dismiss": "Cerrar"
+  },
   "capture": {
     "title": "Disco nuevo",
     "mediaTitle": "Fotos y videos",
