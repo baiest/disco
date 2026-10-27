@@ -80,6 +80,9 @@ Rules:
 - Reuse before writing. Check existing helpers and components first.
   Duplicated logic is a review blocker.
 - Do not add abstractions for needs that do not exist yet.
+- All Supabase access goes through one server-side module in `apps/web`
+  (for example `server/records-repo.ts`). No other file imports
+  `@supabase/supabase-js`, so a future migration touches one place.
 
 ## 5. Language: English only
 
@@ -188,3 +191,18 @@ decision, consequences) and mirror it in the project decision log document.
 | `pnpm test` | Vitest with coverage thresholds |
 | `bash scripts/check_lf.sh` | Fail on CRLF |
 | `bash scripts/check_commit.sh` | Validate commit messages |
+
+## 12. Data-entry robustness (Phase 1)
+
+Phase 1 is only about getting records into the database reliably. Nothing from
+later phases (messaging, bots, voice) is built until this is solid. Details and
+reasoning: `docs/decisions/0004-phase-1-robustness.md`.
+
+- Never lose a record: create the draft first, upload photos afterwards with
+  retries, and keep unsent input locally until it is saved.
+- Saving twice must not duplicate: record IDs are generated on the client.
+- Enforce the domain rules in the database as well as in `packages/domain`.
+- The server always re-validates; it never trusts the client.
+- Soft delete only, with undo. No hard delete from the UI.
+- Photos: resized, orientation fixed, EXIF removed, JPEG or WebP, max 8 each.
+- Error messages shown to users are plain Spanish, never technical text.
