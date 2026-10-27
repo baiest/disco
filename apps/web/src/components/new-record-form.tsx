@@ -17,7 +17,7 @@ import {
   requestUploadAction,
   saveRecordAction,
 } from "@/app/admin/records/new/actions";
-import { preparePhoto, readVideoDuration, sendToSignedUrl } from "@/lib/browser-media";
+import { preparePhoto, sendToSignedUrl } from "@/lib/browser-media";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/draft-storage";
 import { mediaKindOfFile, videoContentType } from "@/lib/file-kind";
 import {
@@ -46,6 +46,8 @@ function failureKey(reason: string | undefined): (typeof FAILURES)[number] {
   return FAILURES.find((known) => known === reason) ?? "failed";
 }
 
+const DURATION_TIMEOUT_MS = 10_000;
+
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 type FieldErrors = Partial<Record<RecordInputField, RecordInputError>>;
@@ -61,6 +63,7 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
   const [saving, setSaving] = useState(false);
 
   const jobs = useRef(new Map<string, UploadMediaJob>());
+  const durationWaiters = useRef(new Map<string, (seconds: number | undefined) => void>());
   const draftReady = useRef<Promise<boolean> | null>(null);
   const fieldsRef = useRef(fields);
   const recordIdRef = useRef(recordId);
@@ -155,6 +158,7 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
     }
     const item: MediaItem = { id, kind, status: "preparing", progress: 0, previewUrl: URL.createObjectURL(file) };
     itemsRef.current = [...itemsRef.current, item];
+    const duration = kind === "video" ? waitForDuration(id) : null;
     dispatch({ type: "add", item });
 
     let job: UploadMediaJob;
@@ -166,7 +170,7 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
       }
       job = { recordId: recordIdRef.current, mediaId: id, blob: prepared.blob, contentType: prepared.contentType, sizeBytes: prepared.sizeBytes };
     } else {
-      const durationSeconds = await readVideoDuration(file);
+      const durationSeconds = (await duration) ?? undefined;
       const contentType = videoContentType(file);
       const check = checkMediaFile({ contentType, sizeBytes: file.size, ...(durationSeconds === undefined ? {} : { durationSeconds }) });
       if (!check.ok) {
@@ -177,6 +181,25 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
     }
     jobs.current.set(id, job);
     await upload(id);
+  }
+
+  /** The video's own preview reports how long it lasts, so the file is never loaded anywhere else. */
+  function settleDuration(id: string, seconds: number | undefined) {
+    durationWaiters.current.get(id)?.(Number.isFinite(seconds) ? seconds : undefined);
+  }
+
+  function waitForDuration(id: string): Promise<number | undefined> {
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        durationWaiters.current.delete(id);
+        resolve(undefined);
+      }, DURATION_TIMEOUT_MS);
+      durationWaiters.current.set(id, (seconds) => {
+        clearTimeout(timer);
+        durationWaiters.current.delete(id);
+        resolve(seconds);
+      });
+    });
   }
 
   function onPick(event: ChangeEvent<HTMLInputElement>) {
@@ -262,7 +285,19 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
                 <img src={item.previewUrl} alt="" className="size-full object-cover" />
               )}
               {item.previewUrl !== "" && item.kind === "video" && (
-                <video src={item.previewUrl} muted playsInline className="size-full object-cover" />
+                <video
+                  src={item.previewUrl}
+                  preload="metadata"
+                  muted
+                  playsInline
+                  className="size-full object-cover"
+                  onLoadedMetadata={(event) => {
+                    settleDuration(item.id, event.currentTarget.duration);
+                  }}
+                  onError={() => {
+                    settleDuration(item.id, undefined);
+                  }}
+                />
               )}
               <span className="absolute inset-x-0 bottom-0 bg-ink/80 px-1 text-xs font-bold text-accent-ink">
                 {item.status === "uploading"

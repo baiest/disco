@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { preparePhoto, readVideoDuration, sendToSignedUrl } from "./browser-media";
+import { preparePhoto, sendToSignedUrl } from "./browser-media";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -85,45 +85,6 @@ describe("sendToSignedUrl", () => {
     const second = start();
     second.request.ontimeout?.();
     await expect(second.result).resolves.toEqual({ ok: false, retryable: true });
-  });
-});
-
-describe("readVideoDuration", () => {
-  function stubVideo(event: "loadedmetadata" | "error", duration: number) {
-    URL.createObjectURL = vi.fn(() => "blob:v");
-    const revoke = vi.fn();
-    URL.revokeObjectURL = revoke;
-    const video: { onloadedmetadata?: () => void; onerror?: () => void; duration: number; preload?: string; setAttribute: () => void } = { duration, setAttribute: () => undefined };
-    vi.spyOn(document, "createElement").mockReturnValue(video as unknown as HTMLElement);
-    return { video, revoke, fire: () => (event === "error" ? video.onerror?.() : video.onloadedmetadata?.()) };
-  }
-
-  it("reads the duration from the metadata", async () => {
-    const { fire, revoke } = stubVideo("loadedmetadata", 12.5);
-    const result = readVideoDuration(new Blob(["x"]));
-    fire();
-    await expect(result).resolves.toBe(12.5);
-    expect(revoke).toHaveBeenCalledWith("blob:v");
-  });
-
-  it("never loads anything that is not a local blob address", async () => {
-    stubVideo("loadedmetadata", 5);
-    URL.createObjectURL = vi.fn(() => "https://evil.example/x.mp4");
-    await expect(readVideoDuration(new Blob(["x"]))).resolves.toBeUndefined();
-  });
-
-  it("gives nothing when the duration is not a number", async () => {
-    const { fire } = stubVideo("loadedmetadata", Number.POSITIVE_INFINITY);
-    const result = readVideoDuration(new Blob(["x"]));
-    fire();
-    await expect(result).resolves.toBeUndefined();
-  });
-
-  it("gives nothing when the video cannot be read", async () => {
-    const { fire } = stubVideo("error", 0);
-    const result = readVideoDuration(new Blob(["x"]));
-    fire();
-    await expect(result).resolves.toBeUndefined();
   });
 });
 

@@ -38,30 +38,6 @@ export async function preparePhoto(file: Blob): Promise<PreparedMedia | null> {
   }
 }
 
-/** Reads how long a video lasts from its metadata, without playing it. */
-export function readVideoDuration(file: Blob): Promise<number | undefined> {
-  return new Promise((resolve) => {
-    const video = document.createElement("video");
-    const url = URL.createObjectURL(file);
-    if (!url.startsWith("blob:")) {
-      resolve(undefined);
-      return;
-    }
-    const finish = (seconds: number | undefined) => {
-      URL.revokeObjectURL(url);
-      resolve(seconds);
-    };
-    video.preload = "metadata";
-    video.onloadedmetadata = () => {
-      finish(Number.isFinite(video.duration) ? video.duration : undefined);
-    };
-    video.onerror = () => {
-      finish(undefined);
-    };
-    video.setAttribute("src", url);
-  });
-}
-
 function isRetryableStatus(status: number): boolean {
   return status === 0 || status === 408 || status === 429 || status >= 500;
 }

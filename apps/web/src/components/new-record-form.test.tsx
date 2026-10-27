@@ -16,7 +16,6 @@ vi.mock("@/lib/browser-media", () => ({
   preparePhoto: vi.fn(() =>
     Promise.resolve({ blob: new Blob(["x"]), contentType: "image/jpeg", sizeBytes: 1 }),
   ),
-  readVideoDuration: vi.fn(() => Promise.resolve(10)),
   sendToSignedUrl: vi.fn(() => Promise.resolve({ ok: true })),
 }));
 
@@ -118,6 +117,48 @@ describe("NewRecordForm", () => {
       expect(screen.getByText(messages.capture.fieldError.invalid_price)).toBeTruthy();
     });
     expect(actions.saveRecordAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("reads a video's length from its preview and uploads it", async () => {
+    actions.requestUploadAction.mockResolvedValue({
+      ok: true,
+      upload: { path: "p", signedUrl: "https://s/u", position: 0, kind: "video", durationSeconds: 30 },
+    });
+    renderForm();
+    const input = document.querySelector<HTMLInputElement>('input[accept="image/*,video/*"]');
+    const file = new File(["x"], "clip.mp4", { type: "video/mp4" });
+    fireEvent.change(input as HTMLInputElement, { target: { files: [file] } });
+    const video = await waitFor(() => {
+      const found = document.querySelector("video");
+      expect(found).not.toBeNull();
+      return found as HTMLVideoElement;
+    });
+    Object.defineProperty(video, "duration", { value: 30 });
+    fireEvent.loadedMetadata(video);
+    await waitFor(() => {
+      expect(saveButton().disabled).toBe(false);
+    });
+    expect(actions.requestUploadAction).toHaveBeenCalledWith(
+      expect.objectContaining({ contentType: "video/mp4", durationSeconds: 30 }),
+    );
+  });
+
+  it("refuses a video longer than two minutes", async () => {
+    renderForm();
+    const input = document.querySelector<HTMLInputElement>('input[accept="image/*,video/*"]');
+    const file = new File(["x"], "clip.mp4", { type: "video/mp4" });
+    fireEvent.change(input as HTMLInputElement, { target: { files: [file] } });
+    const video = await waitFor(() => {
+      const found = document.querySelector("video");
+      expect(found).not.toBeNull();
+      return found as HTMLVideoElement;
+    });
+    Object.defineProperty(video, "duration", { value: 300 });
+    fireEvent.loadedMetadata(video);
+    await waitFor(() => {
+      expect(screen.getByText(messages.capture.failure.too_long)).toBeTruthy();
+    });
+    expect(actions.requestUploadAction).not.toHaveBeenCalled();
   });
 
   it("saves as a draft and goes back to the start", async () => {
