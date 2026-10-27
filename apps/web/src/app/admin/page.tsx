@@ -5,19 +5,14 @@ import { AccountMenu } from "@/components/account-menu";
 import { AlbumCard } from "@/components/album-card";
 import { buildAlbumCards, FILTERS, parseSearch } from "@/lib/inventory";
 import { countUnposted, searchInventory, signThumbnails } from "@/server/records-repo";
-import { createSupabaseServerClient } from "@/server/supabase/server";
+import { getCurrentUserId } from "@/server/supabase/current-user";
 
 type Props = { searchParams: Promise<{ q?: string | string[]; filter?: string | string[] }> };
 
 export default async function AdminPage({ searchParams }: Props) {
   const search = parseSearch(await searchParams);
-  const [supabase, t, admin] = await Promise.all([
-    createSupabaseServerClient(),
-    getTranslations("inventory"),
-    getTranslations("admin"),
-  ]);
-  const { data } = await supabase.auth.getUser();
-  if (data.user === null) {
+  const [t, admin] = await Promise.all([getTranslations("inventory"), getTranslations("admin")]);
+  if ((await getCurrentUserId()) === null) {
     // The proxy already redirects; this check keeps the page safe on its own.
     redirect("/login");
   }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { RecordDetail } from "@/components/record-detail";
 import { loadRecordDetail } from "@/server/records-repo";
-import { createSupabaseServerClient } from "@/server/supabase/server";
+import { getCurrentUserId } from "@/server/supabase/current-user";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -12,9 +12,8 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
   if (!UUID.test(id)) {
     notFound();
   }
-  const [supabase, t, format] = await Promise.all([createSupabaseServerClient(), getTranslations("detail"), getFormatter()]);
-  const { data } = await supabase.auth.getUser();
-  if (data.user === null) {
+  const [t, format] = await Promise.all([getTranslations("detail"), getFormatter()]);
+  if ((await getCurrentUserId()) === null) {
     redirect("/login");
   }
   const detail = await loadRecordDetail(id);

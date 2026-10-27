@@ -4,6 +4,7 @@ import { isSearchRow, type Search, type SearchRow } from "@/lib/inventory";
 import type { PostRepo } from "@/lib/facebook-publish";
 import type { MediaLink } from "@/lib/share-media";
 import type { DetailRepo } from "@/lib/record-detail";
+import { getCurrentUserId } from "./supabase/current-user";
 import { createSupabaseServerClient } from "./supabase/server";
 
 /** The storage bucket keeps its first name even though it now holds videos too. */
@@ -34,10 +35,7 @@ export async function createCaptureRepo(): Promise<CaptureRepo> {
   const supabase = await createSupabaseServerClient();
 
   return {
-    async currentUserId() {
-      const { data } = await supabase.auth.getUser();
-      return data.user?.id ?? null;
-    },
+    currentUserId: getCurrentUserId,
 
     async upsertRecord(record) {
       const { error } = await supabase
@@ -158,27 +156,25 @@ function toDiscRecord(row: Record<string, unknown> & { id: string; status: Recor
   };
 }
 
-async function readRecord(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  recordId: string,
-): Promise<DiscRecord | null> {
+async function readRecordRow(supabase: Client, recordId: string) {
   const found = await supabase.from("records").select(RECORD_COLUMNS).eq("id", recordId).is("deleted_at", null).maybeSingle();
   const row: unknown = found.data;
-  if (found.error !== null || !isRecordRow(row)) {
-    return null;
-  }
-  const media = await supabase.from("record_media").select("id", { count: "exact", head: true }).eq("record_id", recordId);
-  return toDiscRecord(row, media.count ?? 0);
+  return found.error === null && isRecordRow(row) ? row : null;
+}
+
+async function readRecord(supabase: Client, recordId: string): Promise<DiscRecord | null> {
+  const [row, media] = await Promise.all([
+    readRecordRow(supabase, recordId),
+    supabase.from("record_media").select("id", { count: "exact", head: true }).eq("record_id", recordId),
+  ]);
+  return row === null ? null : toDiscRecord(row, media.count ?? 0);
 }
 
 /** Reads and edits one record as the signed in user. */
 export async function createDetailRepo(): Promise<DetailRepo> {
   const supabase = await createSupabaseServerClient();
   return {
-    async currentUserId() {
-      const { data } = await supabase.auth.getUser();
-      return data.user?.id ?? null;
-    },
+    currentUserId: getCurrentUserId,
     getRecord: (recordId) => readRecord(supabase, recordId),
     async updateFields(recordId, values) {
       const { data, error } = await supabase
@@ -212,15 +208,14 @@ export interface RecordDetail {
 /** A record with its photos and videos, as links that work for an hour. Null when it does not exist. */
 export async function loadRecordDetail(recordId: string): Promise<RecordDetail | null> {
   const supabase = await createSupabaseServerClient();
-  const record = await readRecord(supabase, recordId);
-  if (record === null) {
+  // The record and its files are asked for together; the file count comes from the list itself.
+  const [row, listed] = await Promise.all([
+    readRecordRow(supabase, recordId),
+    supabase.from("record_media").select("id, kind, storage_path").eq("record_id", recordId).order("position"),
+  ]);
+  if (row === null) {
     return null;
   }
-  const listed = await supabase
-    .from("record_media")
-    .select("id, kind, storage_path")
-    .eq("record_id", recordId)
-    .order("position");
   const list: unknown[] = Array.isArray(listed.data) ? listed.data : [];
   const items = list.flatMap((entry): { id: string; kind: MediaKind; path: string }[] => {
     const row = entry as Record<string, unknown>;
@@ -237,16 +232,13 @@ export async function loadRecordDetail(recordId: string): Promise<RecordDetail |
     const url = urls.get(item.path);
     return url === undefined ? [] : [{ id: item.id, kind: item.kind, url }];
   });
-  return { record, media };
+  return { record: toDiscRecord(row, list.length), media };
 }
 
 export async function createPostRepo(): Promise<PostRepo> {
   const supabase = await createSupabaseServerClient();
   return {
-    async currentUserId() {
-      const { data } = await supabase.auth.getUser();
-      return data.user?.id ?? null;
-    },
+    currentUserId: getCurrentUserId,
     async markPosted(recordIds) {
       const { data, error } = await supabase
         .from("records")
