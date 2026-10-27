@@ -91,9 +91,23 @@ Everything committed is in English: code, identifiers, comments, commit
 messages, PR titles and descriptions, docs, log and error messages, branch
 names, test names.
 
-User-facing UI copy is the one exception: the app is used by Spanish speakers,
-so UI strings are in Spanish and kept in one place per app so they can be
-translated later. Conversations with an assistant can be in any language.
+User-facing UI text is the one exception: the app is used by Spanish speakers
+and an English version is planned. All UI text lives in `apps/web/messages/<locale>.json`
+and is read with `next-intl` (`useTranslations` / `getTranslations`); never write
+UI text in a component. Rules:
+
+- Text with data uses ICU placeholders (`"Signed in as {email}"`), never string
+  concatenation. Plurals use ICU `plural`.
+- Dates, numbers and prices are formatted with the locale (`next-intl` formatters),
+  not with hand-built strings.
+- Server actions and domain code return codes (`sent`, `no_photo`), and the UI
+  turns them into text.
+- Every locale file must have exactly the keys and placeholders of `es.json`;
+  `src/i18n/messages.test.ts` enforces it.
+- To add a language: create `messages/<code>.json` and list the code in
+  `src/i18n/locales.ts`. Nothing else changes.
+
+Conversations with an assistant can be in any language.
 
 ## 6. TDD
 

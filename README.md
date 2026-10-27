@@ -22,6 +22,15 @@ pnpm dev                              # http://localhost:3000
 Quality gates, also run in CI: `pnpm lint`, `pnpm typecheck`, `pnpm test`,
 `pnpm build`, `pnpm audit:high`.
 
+## Languages
+
+The interface is in Spanish today and ready for more languages with `next-intl`.
+To add one (for example English): copy `apps/web/messages/es.json` to
+`apps/web/messages/en.json`, translate every text keeping the `{placeholders}`,
+and add `"en"` to `apps/web/src/i18n/locales.ts`. The language comes from the
+`NEXT_LOCALE` cookie, then the browser language, then Spanish. A test fails if a
+language file misses a key or a placeholder.
+
 ## Database
 
 The schema lives in `supabase/migrations` (records, record photos, row level
@@ -37,6 +46,34 @@ required. The tests use small stand-ins for Supabase Auth and Storage, so they
 check the schema, constraints and policies but not the real Supabase services.
 Before relying on them in production, try the migrations on a real Supabase
 project (`supabase db push`) and test a magic-link login and a photo upload.
+
+## Login (Supabase Auth)
+
+Admins sign in with a link sent by email: no password. Setup on the Supabase
+project (Authentication):
+
+1. Sign In / Providers: turn off *Allow new users to sign up* and add the admin
+   with *Users > Add user* or *Invite user*.
+2. URL Configuration: set *Site URL* to the app URL (`http://localhost:3000`
+   while developing).
+3. Email Templates: in *Magic Link* (and *Invite user*) point the link to the
+   app so it works in any browser, including the in-app browser of a mail app:
+
+   ```html
+   <h2>Entrar a Disco</h2>
+   <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">Entrar</a></p>
+   ```
+
+   For the *Invite user* template use `type=invite` instead of `type=email`.
+4. Before the owner's father can log in, set up a custom SMTP provider
+   (Authentication > Emails > SMTP Settings). Supabase's built-in email service
+   only delivers to project team members and is limited to a few emails per
+   hour.
+
+Local run: copy `apps/web/.env.example` to `apps/web/.env.local` and fill in the
+project URL and the **publishable** key (`sb_publishable_...`). Never use the
+legacy `anon`/`service_role` keys or the secret key in the app. Open the link on
+the same machine that runs `pnpm dev`, because it points to `localhost`.
 
 ## Repository settings (owner, one time)
 
