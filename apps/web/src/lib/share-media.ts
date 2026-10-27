@@ -48,7 +48,13 @@ type Fetcher = (url: string) => Promise<{ ok: boolean; blob: () => Promise<Blob>
 const FILE_TYPES = { photo: { type: "image/jpeg", extension: "jpg" }, video: { type: "video/mp4", extension: "mp4" } } as const;
 
 /** Downloads the photos and videos so they can be shared as files. All of them, or nothing. */
-export async function fetchFiles(fetcher: Fetcher, items: readonly MediaLink[]): Promise<{ ok: true; files: File[] } | { ok: false }> {
+export async function fetchFiles(
+  fetcher: Fetcher,
+  items: readonly MediaLink[],
+  /** Called every time one more file is ready, with how many are ready so far. */
+  onProgress?: (done: number) => void,
+): Promise<{ ok: true; files: File[] } | { ok: false }> {
+  let done = 0;
   try {
     const files = await Promise.all(
       items.map(async (item) => {
@@ -58,7 +64,10 @@ export async function fetchFiles(fetcher: Fetcher, items: readonly MediaLink[]):
         }
         const blob = await response.blob();
         const { type, extension } = FILE_TYPES[item.kind];
-        return new File([blob], `${item.id}.${extension}`, { type: blob.type === "" ? type : blob.type });
+        const file = new File([blob], `${item.id}.${extension}`, { type: blob.type === "" ? type : blob.type });
+        done += 1;
+        onProgress?.(done);
+        return file;
       }),
     );
     return { ok: true, files };

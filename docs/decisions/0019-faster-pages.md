@@ -24,3 +24,22 @@ request crossed the country.
 - The saved session is still checked in the route guard on every request; only the cost of that
   check dropped.
 - Pictures are still the original files (see 0018); small versions would be the next step.
+
+## Update: a screen appears the instant it is tapped
+
+Tapping a button still felt slow: nothing changed on screen until the server had finished the whole next
+page. Now the main routes have a loading screen (`loading.tsx`, built from `PageSkeleton`): the admin screens,
+the public record and the public catalog show a placeholder at once, and Next prepares those routes ahead
+from the links on screen.
+
+- The admin list and the record page ask for the session check, the data and the texts together instead of
+  the check first and the data after. The proxy still redirects signed out visitors; nothing is shown before
+  the check passes.
+- On the publish screen the files of the post are downloaded all at once (they already were) and the button
+  shows how many are ready ("Preparando 2 de 5…"), instead of a fixed "Preparando…".
+- Not measured: these changes were not timed against the real Supabase project and Vercel, so how much faster
+  it feels has to be judged on the phone.
+
+Still to do, because they are the bigger costs: small versions of the pictures (lists still download the
+original photos, see 0018) and checking in Supabase (Settings > JWT Keys) that the project signs tokens with
+asymmetric keys, so the session check never has to call the Auth server.

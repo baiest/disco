@@ -1,4 +1,7 @@
 {
+  "common": {
+    "loading": "Cargando…"
+  },
   "login": {
     "title": "Entrar",
     "intro": "Escribe tu correo y tu contraseña para entrar.",
@@ -222,7 +225,7 @@
     "textLabel": "Texto de la publicación",
     "textHint": "Escribe lo que quieras decir, como en cualquier publicación.",
     "share": "Publicar",
-    "loadingFiles": "Preparando…",
+    "loadingFiles": "Preparando {done} de {total}…",
     "loadFailed": "No pudimos preparar las fotos. Revisa tu conexión e inténtalo de nuevo.",
     "retry": "Reintentar",
     "sharedHint": "Elige Facebook en la lista que se abrió.",

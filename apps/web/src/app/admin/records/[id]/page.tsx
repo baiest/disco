@@ -19,11 +19,16 @@ export default async function RecordPage({ params, searchParams }: Props) {
   if (!UUID.test(id)) {
     notFound();
   }
-  const [t, format] = await Promise.all([getTranslations("detail"), getFormatter()]);
-  if ((await getCurrentUserId()) === null) {
+  // The session check, the record with its files and the texts are asked for together.
+  const [t, format, userId, detail] = await Promise.all([
+    getTranslations("detail"),
+    getFormatter(),
+    getCurrentUserId(),
+    loadRecordDetail(id),
+  ]);
+  if (userId === null) {
     redirect("/login");
   }
-  const detail = await loadRecordDetail(id);
   if (detail === null) {
     notFound();
   }

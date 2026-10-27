@@ -19,21 +19,27 @@ interface Props {
   actionSlot: HTMLElement | null;
 }
 
-type Files = { state: "loading" } | { state: "failed" } | { state: "ready"; files: File[] };
+type Files = { state: "loading"; done: number } | { state: "failed" } | { state: "ready"; files: File[] };
 
 export function FacebookComposer({ recordIds, media, initialText, actionSlot }: Props) {
   const t = useTranslations("publish");
   const router = useRouter();
   const [text, setText] = useState(initialText);
-  const [files, setFiles] = useState<Files>({ state: "loading" });
+  const [files, setFiles] = useState<Files>({ state: "loading", done: 0 });
   const [message, setMessage] = useState<string | null>(null);
   const [showSave, setShowSave] = useState(false);
   const [busy, setBusy] = useState(false);
 
   // The files are fetched up front: the share sheet only opens straight from a tap.
   const load = useCallback(async () => {
-    setFiles({ state: "loading" });
-    const result = await fetchFiles((url) => fetch(url), media);
+    setFiles({ state: "loading", done: 0 });
+    const result = await fetchFiles(
+      (url) => fetch(url),
+      media,
+      (done) => {
+        setFiles((current) => (current.state === "loading" ? { state: "loading", done } : current));
+      },
+    );
     setFiles(result.ok ? { state: "ready", files: result.files } : { state: "failed" });
   }, [media]);
 
@@ -99,7 +105,7 @@ export function FacebookComposer({ recordIds, media, initialText, actionSlot }: 
             onClick={() => void share()}
             className="h-12 rounded-2xl bg-accent px-5 text-lg font-bold text-accent-ink disabled:bg-disabled disabled:text-muted"
           >
-            {files.state === "loading" ? t("loadingFiles") : t("share")}
+            {files.state === "loading" ? t("loadingFiles", { done: files.done, total: media.length }) : t("share")}
           </button>,
           actionSlot,
         )}

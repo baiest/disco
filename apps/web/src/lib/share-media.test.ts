@@ -73,6 +73,26 @@ describe("fetchFiles", () => {
     }
   });
 
+  it("tells how many files are ready as they arrive, so the screen can show the progress", async () => {
+    const progress: number[] = [];
+    const fetcher = vi.fn(() => Promise.resolve({ ok: true, blob: () => Promise.resolve(new Blob(["x"])) }));
+    await fetchFiles(fetcher, items, (done) => {
+      progress.push(done);
+    });
+    expect(progress).toEqual([1, 2]);
+  });
+
+  it("starts every download at once instead of one after another", async () => {
+    let started = 0;
+    const fetcher = vi.fn(() => {
+      started += 1;
+      return new Promise<never>(() => undefined);
+    });
+    void fetchFiles(fetcher, items);
+    await Promise.resolve();
+    expect(started).toBe(items.length);
+  });
+
   it("fails as a whole when one download fails", async () => {
     const fetcher = vi
       .fn()
