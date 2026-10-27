@@ -7,9 +7,23 @@ export interface FacebookLabels {
 }
 
 const LOCALE = "es";
+const QUOTES = new Set(['"', "\u201C", "\u201D"]);
 
 function shout(text: string): string {
   return text.toLocaleUpperCase(LOCALE);
+}
+
+/** Removes quotes at both ends in one pass; a regular expression here could be slow on hostile text. */
+function stripQuotes(text: string): string {
+  let start = 0;
+  let end = text.length;
+  while (start < end && QUOTES.has(text.charAt(start))) {
+    start += 1;
+  }
+  while (end > start && QUOTES.has(text.charAt(end - 1))) {
+    end -= 1;
+  }
+  return text.slice(start, end);
 }
 
 /**
@@ -20,7 +34,7 @@ function shout(text: string): string {
 export function buildFacebookPost(record: DiscRecord, labels: FacebookLabels): string {
   const lines: string[] = [];
 
-  const title = (record.title ?? "").trim().replace(/^["“”]+|["“”]+$/g, "").trim();
+  const title = stripQuotes((record.title ?? "").trim()).trim();
   if (title !== "") {
     lines.push(`"${shout(title)}"`);
   }

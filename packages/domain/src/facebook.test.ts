@@ -62,4 +62,18 @@ describe("buildFacebookPost", () => {
   it("returns an empty text for a record with nothing to say", () => {
     expect(buildFacebookPost(makeRecord({ status: "draft" }), labels)).toBe("");
   });
+
+  it("stays fast on a title made of thousands of quotes", () => {
+    const hostile = `${'"'.repeat(20_000)}x${'"'.repeat(20_000)}y`;
+    const started = performance.now();
+    const text = buildFacebookPost(makeRecord({ title: hostile, status: "available" }), labels);
+    expect(performance.now() - started).toBeLessThan(200);
+    expect(text).toContain("X");
+  });
+
+  it("strips mixed straight and curly quotes at both ends only", () => {
+    expect(buildFacebookPost(makeRecord({ title: '\u201C"Ritmo "de" Santo"\u201D', status: "draft" }), labels)).toBe(
+      '"RITMO "DE" SANTO"',
+    );
+  });
 });
