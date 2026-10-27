@@ -70,7 +70,7 @@ export function AlbumCard({ card, thumbnailUrl }: { card: Card; thumbnailUrl: st
     return (
       <Link
         href={`/admin/records/${only.id}`}
-        className="flex flex-col gap-3 rounded-3xl border border-line bg-card p-4 active:bg-line"
+        className="flex flex-col gap-3 rounded-3xl border border-line bg-card p-4 shadow-[0_1px_2px_rgb(28_25_23/0.05)] transition duration-200 active:scale-[0.99] active:bg-line"
       >
         {closeLabel}
         {summaryBlock}
@@ -80,7 +80,7 @@ export function AlbumCard({ card, thumbnailUrl }: { card: Card; thumbnailUrl: st
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-3xl border border-line bg-card p-4">
+    <div className="flex flex-col gap-3 rounded-3xl border border-line bg-card p-4 shadow-[0_1px_2px_rgb(28_25_23/0.05)]">
       {closeLabel}
       {summaryBlock}
       {chipRow}

@@ -19,13 +19,13 @@ export function PublicCard({ record, pictureUrl }: { record: PublicRecord; pictu
   const sold = record.status === "sold";
 
   return (
-    <Link href={`/disco/${record.id}`} className="flex size-full flex-col gap-2 rounded-3xl border border-line bg-card p-3 active:bg-line">
+    <Link href={`/disco/${record.id}`} className="group flex size-full flex-col gap-2 rounded-3xl border border-line bg-card p-3 shadow-[0_1px_2px_rgb(28_25_23/0.05)] transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgb(28_25_23/0.10)] active:scale-[0.98] active:bg-line">
       <span className="relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-line">
         {pictureUrl === null ? (
           <RecordIcon />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- signed storage link, not optimised by Next
-          <img src={pictureUrl} alt="" loading="lazy" className={`size-full object-cover ${sold ? "opacity-60" : ""}`} />
+          <img src={pictureUrl} alt="" loading="lazy" className={`size-full object-cover transition duration-300 ease-out group-hover:scale-105 ${sold ? "opacity-60 grayscale" : ""}`} />
         )}
         {sold && (
           <span className="absolute left-2 top-2 rounded-full bg-ink px-3 py-1 text-sm font-bold text-accent-ink">{t("sold")}</span>
@@ -37,7 +37,7 @@ export function PublicCard({ record, pictureUrl }: { record: PublicRecord; pictu
         <span className="truncate text-sm text-muted">{record.artist ?? t("unknownArtist")}</span>
       </span>
       {record.priceCop !== null && (
-        <span className="text-base font-extrabold text-accent">{`$${format.number(record.priceCop, { useGrouping: "always", maximumFractionDigits: 0 })}`}</span>
+        <span className="mt-auto self-start rounded-full bg-accent-soft px-3 py-1 text-base font-extrabold text-accent">{`$${format.number(record.priceCop, { useGrouping: "always", maximumFractionDigits: 0 })}`}</span>
       )}
     </Link>
   );
