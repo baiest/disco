@@ -22,6 +22,22 @@ pnpm dev                              # http://localhost:3000
 Quality gates, also run in CI: `pnpm lint`, `pnpm typecheck`, `pnpm test`,
 `pnpm build`, `pnpm audit:high`.
 
+## Database
+
+The schema lives in `supabase/migrations` (records, record photos, row level
+security and a private `record-photos` storage bucket). The rules are tested
+in `packages/db` against a throw-away PostgreSQL database:
+
+```bash
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres pnpm --filter @disco/db test
+```
+
+Without `DATABASE_URL` the database tests are skipped locally; in CI they are
+required. The tests use small stand-ins for Supabase Auth and Storage, so they
+check the schema, constraints and policies but not the real Supabase services.
+Before relying on them in production, try the migrations on a real Supabase
+project (`supabase db push`) and test a magic-link login and a photo upload.
+
 ## Repository settings (owner, one time)
 
 The CI workflow must have run at least once before `main` can require its
