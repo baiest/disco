@@ -23,7 +23,11 @@ export default async function AdminPage({ searchParams }: Props) {
 
   const rows = await searchInventory(search);
   const cards = rows === null ? [] : buildAlbumCards(rows);
-  const admin = await getTranslations("admin");
+  const [admin, detail, publish] = await Promise.all([
+    getTranslations("admin"),
+    getTranslations("detail"),
+    getTranslations("publish"),
+  ]);
   const shortDate = (iso: string | null) =>
     iso === null ? "" : format.dateTime(new Date(iso), { day: "numeric", month: "short" });
 
@@ -124,6 +128,16 @@ export default async function AdminPage({ searchParams }: Props) {
                 </span>
               ))}
             </div>
+            <ul className="flex flex-col border-t border-line">
+              {card.summary.copies.map((copy, index) => (
+                <li key={copy.id} className="border-b border-line last:border-b-0">
+                  <Link href={`/admin/records/${copy.id}`} className="flex min-h-14 items-center justify-between gap-2 text-base font-bold">
+                    {t("copy", { number: index + 1, status: detail(`status.${copy.status}`) })}
+                    <span aria-hidden="true">›</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </li>
         ))}
       </ul>
@@ -136,6 +150,13 @@ export default async function AdminPage({ searchParams }: Props) {
           {t("addNone")}
         </Link>
       )}
+
+      <Link
+        href="/admin/publish"
+        className="flex h-14 items-center justify-center rounded-2xl border-2 border-ink text-base font-bold"
+      >
+        {publish("title")}
+      </Link>
 
       <form action={signOut} className="mt-4">
         <button type="submit" className="h-12 w-full text-base font-semibold underline underline-offset-4">

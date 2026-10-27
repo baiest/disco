@@ -82,6 +82,8 @@ describe("NewRecordForm", () => {
       input: { title: "Ritmo", artist: "", priceText: "", notes: "" },
     });
     expect(localStorage.getItem("disco:draft")).toBeNull();
+    const link = screen.getByRole("link", { name: /Publicar este disco en Facebook/ });
+    expect(link.getAttribute("href")).toMatch(/^\/admin\/publish\?ids=[0-9a-f-]{36}$/);
   });
 
   it("shows a retry button when an upload fails and lets the file be removed", async () => {

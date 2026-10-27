@@ -10,6 +10,7 @@ import {
   type RecordInputField,
 } from "@disco/domain";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useReducer, useRef, useState, type ChangeEvent } from "react";
 import {
@@ -18,6 +19,7 @@ import {
   saveRecordAction,
 } from "@/app/admin/records/new/actions";
 import { preparePhoto, sendToSignedUrl } from "@/lib/browser-media";
+import { addToBatch, loadBatch } from "@/lib/batch-storage";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/draft-storage";
 import { mediaKindOfFile, videoContentType } from "@/lib/file-kind";
 import {
@@ -61,6 +63,7 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [batch, setBatch] = useState<string[]>([]);
 
   const jobs = useRef(new Map<string, UploadMediaJob>());
   const durationWaiters = useRef(new Map<string, (seconds: number | undefined) => void>());
@@ -72,6 +75,7 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
 
   // Restore what was typed before the tab closed or the connection dropped.
   useEffect(() => {
+    setBatch(loadBatch(localStorage));
     const draft = loadDraft(localStorage);
     if (draft !== null) {
       recordIdRef.current = draft.recordId;
@@ -246,6 +250,8 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
       router.push("/admin");
       return;
     }
+    addToBatch(localStorage, recordIdRef.current);
+    setBatch(loadBatch(localStorage));
     const nextId = crypto.randomUUID();
     recordIdRef.current = nextId;
     fieldsRef.current = EMPTY_FIELDS;
@@ -397,6 +403,15 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
         <p role="status" className="text-base font-bold">
           {notice}
         </p>
+      )}
+
+      {batch.length > 0 && (
+        <Link
+          href={`/admin/publish?ids=${batch.join(",")}`}
+          className="flex h-14 items-center justify-center rounded-2xl border-2 border-ink text-base font-bold"
+        >
+          {t("publishBatch", { count: batch.length })}
+        </Link>
       )}
 
       <div className="fixed inset-x-0 bottom-0 flex flex-col gap-2 border-t border-line bg-paper px-4 pb-5 pt-3">

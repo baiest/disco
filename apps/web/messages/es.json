@@ -78,7 +78,8 @@
       "invalid_id": "Algo salió mal. Recarga la página."
     },
     "saved": "Guardado. Puedes seguir con otro disco.",
-    "restored": "Recuperamos lo que habías escrito."
+    "restored": "Recuperamos lo que habías escrito.",
+    "publishBatch": "{count, plural, one {Publicar este disco en Facebook} other {Publicar estos # discos en Facebook}}"
   },
   "inventory": {
     "searchLabel": "Buscar un disco",
@@ -104,6 +105,86 @@
       "unavailable": "{count, plural, one {# no disponible} other {# no disponibles}}",
       "drafts": "{count, plural, one {# borrador} other {# borradores}}"
     },
-    "addNone": "No es ninguno: agregar este disco"
+    "addNone": "No es ninguno: agregar este disco",
+    "copy": "Copia {number} · {status}"
+  },
+  "detail": {
+    "back": "Volver a tus discos",
+    "untitled": "Sin título",
+    "mediaTitle": "Fotos y videos",
+    "noMedia": "Este disco no tiene fotos ni videos.",
+    "statusTitle": "Estado",
+    "status": {
+      "draft": "Borrador",
+      "available": "Disponible",
+      "sold": "Vendido",
+      "unavailable": "No disponible"
+    },
+    "publish": "Publicar",
+    "soldOn": "Vendido el {date}",
+    "changed": "Ahora está: {status}.",
+    "undo": "Deshacer",
+    "undone": "Listo, volvió a: {status}.",
+    "statusError": {
+      "invalid_id": "Algo salió mal. Recarga la página.",
+      "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
+      "not_found": "No encontramos este disco.",
+      "invalid_status": "Ese estado no es válido.",
+      "no_media": "Agrega una foto o un video antes de publicarlo.",
+      "same_status": "Ya está en ese estado.",
+      "publish_first": "Primero publícalo.",
+      "failed": "No se pudo cambiar. Revisa tu conexión e inténtalo de nuevo."
+    },
+    "save": "Guardar cambios",
+    "saved": "Cambios guardados.",
+    "saveError": {
+      "invalid_id": "Algo salió mal. Recarga la página.",
+      "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
+      "failed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo."
+    },
+    "publishOnFacebook": "Publicar en Facebook"
+  },
+  "publish": {
+    "title": "Publicar en Facebook",
+    "back": "Volver",
+    "selectTitle": "¿Cuáles vas a publicar?",
+    "selectHint": "Elige los discos que van en el mismo post. Caben hasta {max} entre fotos y videos.",
+    "selectEmpty": "No hay discos disponibles para publicar.",
+    "prepare": "Preparar publicación",
+    "state": {
+      "never": "Sin publicar",
+      "needsUpdate": "Cambió después de publicarlo",
+      "posted": "Publicado el {date}"
+    },
+    "files": "{count, plural, one {# foto o video} other {# fotos y videos}}",
+    "tooMany": "Son {total} fotos y videos y en Facebook caben {max}. Quita algún disco.",
+    "noFiles": "Estos discos no tienen fotos ni videos para publicar.",
+    "notFound": "No encontramos discos disponibles para publicar.",
+    "chooseAgain": "Elegir otros discos",
+    "availableLabel": "DISPONIBLE",
+    "soldLabel": "VENDIDO",
+    "textLabel": "Texto de la publicación",
+    "textHint": "Escribe lo que quieras decir, como en cualquier publicación.",
+    "copy": "Copiar el texto",
+    "copied": "Texto copiado.",
+    "copyFailed": "No se pudo copiar. Selecciona el texto y cópialo a mano.",
+    "share": "Abrir Facebook con las fotos",
+    "loadingFiles": "Preparando las fotos y videos…",
+    "loadFailed": "No pudimos preparar las fotos. Revisa tu conexión e inténtalo de nuevo.",
+    "retry": "Reintentar",
+    "sharedHint": "Elige Facebook en la lista que se abrió.",
+    "unsupported": "Este teléfono no puede enviar las fotos directo. Guárdalas aquí abajo y adjúntalas en Facebook.",
+    "shareFailed": "No se pudo abrir el menú para compartir. Guarda las fotos aquí abajo y adjúntalas en Facebook.",
+    "saveFiles": "Guardar las fotos y videos",
+    "saveFile": "Abrir {number} de {total}",
+    "pasteStep": "En Facebook, pega el texto y publica.",
+    "note": "Facebook no deja que otra aplicación publique por ti en un perfil personal. Por eso lo haces tú, en dos toques.",
+    "done": "Ya lo publiqué",
+    "doneError": {
+      "invalid_ids": "Algo salió mal. Recarga la página.",
+      "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
+      "failed": "No se pudo guardar que ya lo publicaste. Revisa tu conexión e inténtalo de nuevo."
+    },
+    "untitled": "Sin título"
   }
 }
