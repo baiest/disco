@@ -221,5 +221,9 @@ reasoning: `docs/decisions/0004-phase-1-robustness.md`.
 - Enforce the domain rules in the database as well as in `packages/domain`.
 - The server always re-validates; it never trusts the client.
 - Soft delete only, with undo. No hard delete from the UI.
-- Photos: resized, orientation fixed, EXIF removed, JPEG or WebP, max 8 each.
+- Media: a record holds up to 8 photos and videos in total, at most 2 videos of up to 2 minutes each. Photos are resized, orientation fixed, EXIF removed, JPEG or
+  WebP. Videos are MP4, QuickTime or WebM, up to 50 MB.
+- Facebook is the sales channel. The owner posts from a personal profile, which
+  cannot be posted to by an app, so publishing is assisted (copy the text, share the
+  media). The app tracks `facebook_posted_at` and `facebook_needs_update`.
 - Error messages shown to users are plain Spanish, never technical text.

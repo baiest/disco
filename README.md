@@ -33,8 +33,8 @@ language file misses a key or a placeholder.
 
 ## Database
 
-The schema lives in `supabase/migrations` (records, record photos, row level
-security and a private `record-photos` storage bucket). The rules are tested
+The schema lives in `supabase/migrations` (records, record media with photos and
+videos, row level security and a private `record-photos` storage bucket). The rules are tested
 in `packages/db` against a throw-away PostgreSQL database:
 
 ```bash
