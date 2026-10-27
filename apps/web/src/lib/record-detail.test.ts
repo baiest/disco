@@ -2,6 +2,8 @@ import type { DiscRecord } from "@disco/domain";
 import { describe, expect, it, vi } from "vitest";
 import {
   changeRecordStatus,
+  removeRecord,
+  restoreRecord,
   undoRecordStatus,
   updateRecordFields,
   type DetailRepo,
@@ -33,6 +35,7 @@ function fakeRepo(overrides: Partial<DetailRepo> = {}): DetailRepo {
     getRecord: vi.fn().mockResolvedValue(record()),
     updateFields: vi.fn().mockResolvedValue({ ok: true }),
     setStatus: vi.fn().mockResolvedValue({ ok: true }),
+    setDeleted: vi.fn().mockResolvedValue({ ok: true }),
     ...overrides,
   };
 }
@@ -128,3 +131,53 @@ describe("updateRecordFields", () => {
     expect(await updateRecordFields(failing, { recordId: ID, input })).toEqual({ ok: false, reason: "failed" });
   });
 });
+
+describe("removeRecord", () => {
+  it("marks the record as deleted, it does not erase it", async () => {
+    const repo = fakeRepo();
+    expect(await removeRecord(repo, { recordId: ID })).toEqual({ ok: true });
+    expect(repo.setDeleted).toHaveBeenCalledWith(ID, true);
+  });
+
+  it("refuses a bad id or no session without touching anything", async () => {
+    const repo = fakeRepo();
+    expect(await removeRecord(repo, { recordId: "nope" })).toEqual({ ok: false, reason: "invalid_id" });
+    const signedOut = fakeRepo({ currentUserId: vi.fn().mockResolvedValue(null) });
+    expect(await removeRecord(signedOut, { recordId: ID })).toEqual({ ok: false, reason: "unauthenticated" });
+    expect(repo.setDeleted).not.toHaveBeenCalled();
+    expect(signedOut.setDeleted).not.toHaveBeenCalled();
+  });
+
+  it("says when the record is not there", async () => {
+    const repo = fakeRepo({ getRecord: vi.fn().mockResolvedValue(null) });
+    expect(await removeRecord(repo, { recordId: ID })).toEqual({ ok: false, reason: "not_found" });
+    expect(repo.setDeleted).not.toHaveBeenCalled();
+  });
+
+  it("reports a database failure", async () => {
+    const repo = fakeRepo({ setDeleted: vi.fn().mockResolvedValue({ ok: false, reason: "other" }) });
+    expect(await removeRecord(repo, { recordId: ID })).toEqual({ ok: false, reason: "failed" });
+  });
+});
+
+describe("restoreRecord", () => {
+  it("brings a deleted record back", async () => {
+    const repo = fakeRepo();
+    expect(await restoreRecord(repo, { recordId: ID })).toEqual({ ok: true });
+    expect(repo.setDeleted).toHaveBeenCalledWith(ID, false);
+  });
+
+  it("refuses a bad id or no session", async () => {
+    const repo = fakeRepo();
+    expect(await restoreRecord(repo, { recordId: "nope" })).toEqual({ ok: false, reason: "invalid_id" });
+    const signedOut = fakeRepo({ currentUserId: vi.fn().mockResolvedValue(null) });
+    expect(await restoreRecord(signedOut, { recordId: ID })).toEqual({ ok: false, reason: "unauthenticated" });
+    expect(repo.setDeleted).not.toHaveBeenCalled();
+  });
+
+  it("reports a database failure, also when nothing was there to restore", async () => {
+    const repo = fakeRepo({ setDeleted: vi.fn().mockResolvedValue({ ok: false, reason: "other" }) });
+    expect(await restoreRecord(repo, { recordId: ID })).toEqual({ ok: false, reason: "failed" });
+  });
+});
+

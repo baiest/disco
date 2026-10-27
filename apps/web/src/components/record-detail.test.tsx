@@ -7,17 +7,20 @@ const actions = vi.hoisted(() => ({
   changeStatusAction: vi.fn(),
   undoStatusAction: vi.fn(),
   saveFieldsAction: vi.fn(),
+  deleteRecordAction: vi.fn(),
 }));
+const push = vi.hoisted(() => vi.fn());
 vi.mock("@/app/admin/records/[id]/actions", () => actions);
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 import { RecordDetail } from "./record-detail";
 
 const fields = { title: "Ritmo", artist: "", priceText: "", notes: "" };
 
-function renderDetail(status: "draft" | "available" | "sold" = "available") {
+function renderDetail(status: "draft" | "available" | "sold" = "available", postedOnFacebook = false) {
   return render(
     <NextIntlClientProvider locale="es" messages={messages}>
-      <RecordDetail recordId="r1" initialStatus={status} initialFields={fields} soldOn={null} media={[]} />
+      <RecordDetail recordId="r1" initialStatus={status} initialFields={fields} soldOn={null} media={[]} postedOnFacebook={postedOnFacebook} />
     </NextIntlClientProvider>,
   );
 }
@@ -106,13 +109,69 @@ describe("RecordDetail", () => {
   it("shows the saved price grouped and keeps grouping as it is edited", () => {
     render(
       <NextIntlClientProvider locale="es" messages={messages}>
-        <RecordDetail recordId="r1" initialStatus="available" initialFields={{ ...fields, priceText: "80000" }} soldOn={null} media={[]} />
+        <RecordDetail recordId="r1" initialStatus="available" initialFields={{ ...fields, priceText: "80000" }} soldOn={null} media={[]} postedOnFacebook={false} />
       </NextIntlClientProvider>,
     );
     const price = screen.getByLabelText<HTMLInputElement>(messages.capture.fields.price);
     expect(price.value).toBe("80.000");
     fireEvent.change(price, { target: { value: "1200000" } });
     expect(price.value).toBe("1.200.000");
+  });
+
+  describe("deleting the record", () => {
+    const open = () => {
+      fireEvent.click(button(messages.detail.deleteButton));
+    };
+
+    it("asks first and deletes nothing until it is confirmed", () => {
+      renderDetail();
+      expect(screen.queryByRole("alertdialog")).toBeNull();
+      open();
+      expect(screen.getByRole("alertdialog", { name: messages.detail.deleteTitle })).toBeTruthy();
+      expect(actions.deleteRecordAction).not.toHaveBeenCalled();
+    });
+
+    it("keeps the record when the owner changes his mind", () => {
+      renderDetail();
+      open();
+      fireEvent.click(button(messages.detail.deleteCancel));
+      expect(screen.queryByRole("alertdialog")).toBeNull();
+      expect(actions.deleteRecordAction).not.toHaveBeenCalled();
+      expect(push).not.toHaveBeenCalled();
+    });
+
+    it("deletes it and goes back to the list, offering to undo", async () => {
+      actions.deleteRecordAction.mockResolvedValue({ ok: true });
+      renderDetail();
+      open();
+      fireEvent.click(button(messages.detail.deleteConfirm));
+      await waitFor(() => {
+        expect(push).toHaveBeenCalledWith("/admin?undo=r1");
+      });
+      expect(actions.deleteRecordAction).toHaveBeenCalledWith("r1");
+    });
+
+    it("stays on the screen and explains when it could not be deleted", async () => {
+      actions.deleteRecordAction.mockResolvedValue({ ok: false, reason: "failed" });
+      renderDetail();
+      open();
+      fireEvent.click(button(messages.detail.deleteConfirm));
+      await waitFor(() => {
+        expect(screen.getByText(messages.detail.deleteError.failed)).toBeTruthy();
+      });
+      expect(push).not.toHaveBeenCalled();
+      expect(screen.getByRole("alertdialog")).toBeTruthy();
+    });
+
+    it("reminds that a Facebook post stays there, only when it was posted", () => {
+      const first = renderDetail("available", true);
+      open();
+      expect(screen.getByText(messages.detail.deleteBodyFacebook)).toBeTruthy();
+      first.unmount();
+      renderDetail("available", false);
+      open();
+      expect(screen.getByText(messages.detail.deleteBody)).toBeTruthy();
+    });
   });
 });
 

@@ -126,7 +126,14 @@
     "copy": "Copia {number} · {status}",
     "publishBanner": "{count, plural, one {# disco sin publicar en Facebook} other {# discos sin publicar en Facebook}}",
     "publishBannerAction": "Publicarlos",
-    "emptyAdd": "Agregar el primer disco"
+    "emptyAdd": "Agregar el primer disco",
+    "deletedNotice": "Disco eliminado.",
+    "deletedUndo": "Deshacer",
+    "deletedDismiss": "Cerrar",
+    "noResultsQuery": "No encontré «{query}»",
+    "noResultsFilter": "No hay discos con este filtro.",
+    "noResultsHint": "Revisa cómo lo escribiste o prueba con menos palabras.",
+    "noResultsAll": "Ver todos los discos"
   },
   "detail": {
     "back": "Volver a tus discos",
@@ -162,7 +169,19 @@
       "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
       "failed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo."
     },
-    "publishOnFacebook": "Publicar en Facebook"
+    "publishOnFacebook": "Publicar en Facebook",
+    "deleteButton": "Eliminar disco",
+    "deleteTitle": "¿Eliminar este disco?",
+    "deleteBody": "Va a desaparecer de tus listas. Podrás deshacerlo justo después.",
+    "deleteBodyFacebook": "Va a desaparecer de tus listas. Podrás deshacerlo justo después. Si ya lo publicaste en Facebook, esa publicación sigue allá y la borras tú.",
+    "deleteConfirm": "Sí, eliminar",
+    "deleteCancel": "No, conservarlo",
+    "deleteError": {
+      "invalid_id": "Algo salió mal. Recarga la página.",
+      "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
+      "not_found": "Ese disco ya no está.",
+      "failed": "No se pudo eliminar. Revisa tu conexión e inténtalo de nuevo."
+    }
   },
   "publish": {
     "title": "Publicar en Facebook",

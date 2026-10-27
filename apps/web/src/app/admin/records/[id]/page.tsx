@@ -41,6 +41,7 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
         }}
         soldOn={record.soldAt === null ? null : format.dateTime(new Date(record.soldAt), { day: "numeric", month: "short" })}
         media={media}
+        postedOnFacebook={record.facebookPostedAt !== null}
       />
     </main>
   );
