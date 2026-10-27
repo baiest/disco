@@ -65,6 +65,7 @@ apps/
 packages/
   config/           # Shared tsconfig, eslint and vitest configuration
   domain/           # Pure business logic and types, no framework imports
+  db/               # Tests for the SQL schema, constraints and RLS policies
 supabase/
   migrations/       # SQL migrations (only created on explicit request)
 docs/
