@@ -16,6 +16,8 @@ begin
 end
 $$;
 
+create schema if not exists extensions;
+
 create schema auth;
 create table auth.users (
   id uuid primary key,
@@ -56,7 +58,7 @@ begin
 end
 $$;
 
-grant usage on schema auth, storage, public to anon, authenticated, service_role;
+grant usage on schema auth, storage, public, extensions to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
 grant all on storage.objects, storage.buckets to authenticated, service_role;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
