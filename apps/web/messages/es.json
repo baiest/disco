@@ -169,7 +169,6 @@
       "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
       "failed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo."
     },
-    "publishOnFacebook": "Publicar en Facebook",
     "deleteButton": "Eliminar disco",
     "deleteTitle": "¿Eliminar este disco?",
     "deleteBody": "Va a desaparecer de tus listas. Podrás deshacerlo justo después.",
@@ -186,7 +185,10 @@
     "showPricePublic": "Mostrar el precio al público",
     "showPricePublicHint": "Por defecto el cliente no ve el precio. Enciéndelo solo en los discos donde quieras mostrarlo.",
     "showPriceNeedsPrice": "Escribe un precio para poder mostrarlo.",
-    "pricePublicError": "No se pudo cambiar. Inténtalo de nuevo."
+    "pricePublicError": "No se pudo cambiar. Inténtalo de nuevo.",
+    "batchAdd": "Agregar al lote de Facebook",
+    "batchRemove": "Quitar del lote de Facebook",
+    "batchReview": "Revisar y publicar"
   },
   "publish": {
     "title": "Publicar en Facebook",
@@ -230,7 +232,20 @@
       "failed": "No se pudo guardar que ya lo publicaste. Revisa tu conexión e inténtalo de nuevo."
     },
     "untitled": "Sin título",
-    "sharedPasteHint": "Copiamos tu texto. En Facebook, toca el cuadro de texto, mantén presionado y elige Pegar."
+    "sharedPasteHint": "Copiamos tu texto. En Facebook, toca el cuadro de texto, mantén presionado y elige Pegar.",
+    "batchTitle": "Tu publicación en Facebook",
+    "batchCount": "{records, plural, one {# disco} other {# discos}} · {files} de {max} fotos y videos",
+    "batchReview": "Revisar y publicar",
+    "batchOver": "Pasaste el límite: sobran {extra, plural, one {# foto o video} other {# fotos y videos}}. Quita algún disco.",
+    "batchMore": "{count, plural, one {y # más} other {y # más}}",
+    "reviewTitle": "Revisa tu publicación",
+    "reviewHint": "Estos discos van juntos en un solo post. Puedes quitar o editar alguno antes de publicar.",
+    "edit": "Editar",
+    "removeFromBatch": "Quitar",
+    "addMore": "Agregar más discos",
+    "emptyBatch": "Tu publicación está vacía.",
+    "pickDiscs": "Elegir discos",
+    "filesOfRecord": "{count, plural, one {# foto o video} other {# fotos y videos}}"
   },
   "catalog": {
     "title": "Discos",

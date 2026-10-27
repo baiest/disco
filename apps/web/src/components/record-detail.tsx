@@ -12,6 +12,7 @@ import {
   setPricePublicAction,
   undoStatusAction,
 } from "@/app/admin/records/[id]/actions";
+import { BatchToggle } from "./batch-toggle";
 import { ConfirmDialog } from "./confirm-dialog";
 import { PriceInput, useFormatPrice } from "./price-input";
 
@@ -206,14 +207,7 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
             ))
           )}
         </div>
-        {status === "available" && (
-          <Link
-            href={`/admin/publish?ids=${recordId}`}
-            className="flex h-14 items-center justify-center rounded-2xl bg-accent text-lg font-bold text-accent-ink"
-          >
-            {t("publishOnFacebook")}
-          </Link>
-        )}
+        {status === "available" && <BatchToggle recordId={recordId} />}
         {(status === "available" || status === "sold") && (
           <Link href={`/disco/${recordId}`} className="flex h-12 items-center text-base font-bold underline underline-offset-4">
             {t("seePublic")}

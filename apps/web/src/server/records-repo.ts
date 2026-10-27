@@ -1,6 +1,7 @@
 import type { CaptureRepo, RepoResult } from "@/lib/capture";
 import type { DiscRecord, MediaKind, RecordStatus } from "@disco/domain";
 import { isSearchRow, type Search, type SearchRow } from "@/lib/inventory";
+import { buildBatchSummaries, type BatchSummary } from "@/lib/batch-summary";
 import type { PostRepo } from "@/lib/facebook-publish";
 import type { MediaLink } from "@/lib/share-media";
 import type { DetailRepo } from "@/lib/record-detail";
@@ -405,3 +406,48 @@ export async function countUnposted(): Promise<number> {
   const data: unknown = result.data;
   return result.error === null && Array.isArray(data) ? data.length : 0;
 }
+
+export interface BatchItemView extends BatchSummary {
+  thumbnailUrl: string | null;
+}
+
+/**
+ * The records of the owner's Facebook batch that can still be posted (available, not deleted), in the order
+ * they were added, with a link for each miniature. A record that no longer qualifies just drops out.
+ */
+export async function loadBatchSummaries(ids: string[]): Promise<BatchItemView[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  const supabase = await createSupabaseServerClient();
+  const found = await supabase.from("records").select("id, title, artist").in("id", ids).eq("status", "available").is("deleted_at", null);
+  const rows: unknown[] = Array.isArray(found.data) ? found.data : [];
+  const records = rows.flatMap((entry): { id: string; title: string | null; artist: string | null }[] => {
+    const row = entry as Record<string, unknown>;
+    return typeof row["id"] === "string" ? [{ id: row["id"], title: text(row["title"]), artist: text(row["artist"]) }] : [];
+  });
+  if (records.length === 0) {
+    return [];
+  }
+  const listed = await supabase
+    .from("record_media")
+    .select("record_id, storage_path, position")
+    .in("record_id", records.map((record) => record.id))
+    .order("position");
+  const files = (Array.isArray(listed.data) ? (listed.data as unknown[]) : []).flatMap((entry): { recordId: string; path: string }[] => {
+    const row = entry as Record<string, unknown>;
+    return typeof row["record_id"] === "string" && typeof row["storage_path"] === "string"
+      ? [{ recordId: row["record_id"], path: row["storage_path"] }]
+      : [];
+  });
+  const summaries = buildBatchSummaries(ids, records, files);
+  const urls = await signedUrlMap(
+    supabase,
+    summaries.flatMap((summary) => (summary.thumbnailPath === null ? [] : [summary.thumbnailPath])),
+  );
+  return summaries.map((summary) => ({
+    ...summary,
+    thumbnailUrl: summary.thumbnailPath === null ? null : (urls.get(summary.thumbnailPath) ?? null),
+  }));
+}
+

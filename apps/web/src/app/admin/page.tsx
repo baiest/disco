@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccountMenu } from "@/components/account-menu";
 import { AlbumCard } from "@/components/album-card";
+import { BatchSummaryCard } from "@/components/batch-summary-card";
 import { BottomBar } from "@/components/bottom-bar";
 import { DeletedNotice } from "@/components/deleted-notice";
 import { EmptyResults } from "@/components/empty-results";
@@ -40,6 +41,8 @@ export default async function AdminPage({ searchParams }: Props) {
       </header>
 
       {undoId !== undefined && deleted && <DeletedNotice recordId={undoId} />}
+
+      <BatchSummaryCard />
 
       <form action="/admin" method="get" role="search" className="relative">
         <input type="hidden" name="filter" value={search.filter} />

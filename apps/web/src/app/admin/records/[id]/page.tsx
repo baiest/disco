@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { BatchSummaryCard } from "@/components/batch-summary-card";
 import { RecordDetail } from "@/components/record-detail";
 import { loadRecordDetail } from "@/server/records-repo";
 import { getCurrentUserId } from "@/server/supabase/current-user";
@@ -30,6 +31,7 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
         </Link>
         <h1 className="font-display text-2xl font-extrabold">{record.title ?? t("untitled")}</h1>
       </header>
+      <BatchSummaryCard />
       <RecordDetail
         recordId={record.id}
         initialStatus={record.status}

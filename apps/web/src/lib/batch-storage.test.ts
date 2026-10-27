@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addToBatch, clearBatch, loadBatch } from "./batch-storage";
+import { addToBatch, clearBatch, isInBatch, loadBatch, notifyBatchChanged, onBatchChanged, removeFromBatch } from "./batch-storage";
 import type { KeyValueStore } from "./draft-storage";
 
 function memoryStore(): KeyValueStore & { data: Map<string, string> } {
@@ -62,3 +62,57 @@ describe("batch storage", () => {
     expect(loadBatch(broken)).toEqual([]);
   });
 });
+
+describe("removing from the batch", () => {
+  it("takes one record out and keeps the order of the rest", () => {
+    const store = memoryStore();
+    ["a", "b", "c"].forEach((id) => {
+      addToBatch(store, id);
+    });
+    removeFromBatch(store, "b");
+    expect(loadBatch(store)).toEqual(["a", "c"]);
+  });
+
+  it("ignores a record that is not there, and never throws when storage is blocked", () => {
+    const store = memoryStore();
+    addToBatch(store, "a");
+    removeFromBatch(store, "zzz");
+    expect(loadBatch(store)).toEqual(["a"]);
+    expect(() => {
+      removeFromBatch(broken, "a");
+    }).not.toThrow();
+  });
+
+  it("clears the key when the last record leaves", () => {
+    const store = memoryStore();
+    addToBatch(store, "a");
+    removeFromBatch(store, "a");
+    expect(loadBatch(store)).toEqual([]);
+    expect(store.data.has("disco:batch")).toBe(false);
+  });
+});
+
+describe("isInBatch", () => {
+  it("tells whether a record is in the batch", () => {
+    const store = memoryStore();
+    addToBatch(store, "a");
+    expect(isInBatch(store, "a")).toBe(true);
+    expect(isInBatch(store, "b")).toBe(false);
+    expect(isInBatch(broken, "a")).toBe(false);
+  });
+});
+
+describe("batch change notices", () => {
+  it("tells every listener when the batch changes, and stops when unsubscribed", () => {
+    let calls = 0;
+    const stop = onBatchChanged(() => {
+      calls += 1;
+    });
+    notifyBatchChanged();
+    notifyBatchChanged();
+    stop();
+    notifyBatchChanged();
+    expect(calls).toBe(2);
+  });
+});
+
