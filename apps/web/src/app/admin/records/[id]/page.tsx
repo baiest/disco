@@ -3,13 +3,19 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { BatchSummaryCard } from "@/components/batch-summary-card";
 import { RecordDetail } from "@/components/record-detail";
+import { backTarget } from "@/lib/back-target";
 import { loadRecordDetail } from "@/server/records-repo";
 import { getCurrentUserId } from "@/server/supabase/current-user";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function RecordPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string | string[]; ids?: string | string[] }>;
+};
+
+export default async function RecordPage({ params, searchParams }: Props) {
+  const [{ id }, query] = await Promise.all([params, searchParams]);
   if (!UUID.test(id)) {
     notFound();
   }
@@ -26,7 +32,7 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 pt-3">
       <header className="flex items-center gap-1">
-        <Link href="/admin" aria-label={t("back")} className="flex size-12 items-center justify-center text-2xl font-bold">
+        <Link href={backTarget(query)} aria-label={t("back")} className="flex size-12 items-center justify-center text-2xl font-bold">
           ←
         </Link>
         <h1 className="font-display text-2xl font-extrabold">{record.title ?? t("untitled")}</h1>

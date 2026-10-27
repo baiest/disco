@@ -13,9 +13,9 @@ const MAX_MINIATURES = 4;
 
 /**
  * The post being put together: a miniature for each record, how many records and files, and a way to review
- * it. It shows on every admin screen while the batch has something in it.
+ * it (unless the screen has its own button for that). It shows on every admin screen while the batch has something in it.
  */
-export function BatchSummaryCard() {
+export function BatchSummaryCard({ showReview = true }: { showReview?: boolean }) {
   const t = useTranslations("publish");
   const { ids, remove } = useBatch();
   const [items, setItems] = useState<BatchItemView[]>([]);
@@ -75,12 +75,14 @@ export function BatchSummaryCard() {
           {t("batchOver", { extra: -totals.left })}
         </p>
       )}
-      <Link
-        href={`/admin/publish?ids=${items.map((item) => item.id).join(",")}`}
-        className="flex h-14 items-center justify-center rounded-2xl bg-accent text-lg font-bold text-accent-ink"
-      >
-        {t("batchReview")}
-      </Link>
+      {showReview && (
+        <Link
+          href={`/admin/publish?ids=${items.map((item) => item.id).join(",")}`}
+          className="flex h-14 items-center justify-center rounded-2xl bg-accent text-lg font-bold text-accent-ink"
+        >
+          {t("batchReview")}
+        </Link>
+      )}
     </section>
   );
 }

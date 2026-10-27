@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { batchTotals } from "@/lib/batch-summary";
+import { recordHref } from "@/lib/back-target";
 import { MAX_POST_MEDIA } from "@/lib/facebook-post";
 import type { MediaLink } from "@/lib/share-media";
 import { FacebookComposer } from "./facebook-composer";
@@ -28,6 +29,7 @@ export function PublishReview({ items: initialItems, initialText }: { items: Rev
   const [items, setItems] = useState(initialItems);
   const [actionSlot, setActionSlot] = useState<HTMLElement | null>(null);
   const media = useMemo(() => items.flatMap((item) => item.media), [items]);
+  const postIds = items.map((item) => item.id);
   const totals = batchTotals(items.map((item) => ({ mediaCount: item.media.length })));
 
   if (items.length === 0) {
@@ -56,43 +58,38 @@ export function PublishReview({ items: initialItems, initialText }: { items: Rev
           {items.map((item) => {
             const name = item.title ?? t("untitled");
             return (
-              <li key={item.id} className="flex items-center gap-3 rounded-2xl border border-line bg-card p-3">
-                <span className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-line">
-                  {item.thumbnailUrl === null ? (
-                    <svg viewBox="0 0 72 72" aria-hidden="true" className="size-10 text-field">
-                      <circle cx="36" cy="36" r="30" fill="none" stroke="currentColor" strokeWidth="4" />
-                      <circle cx="36" cy="36" r="8" fill="currentColor" />
-                    </svg>
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element -- private signed link, not optimised by Next
-                    <img src={item.thumbnailUrl} alt="" className="size-full object-cover" />
-                  )}
-                </span>
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-base font-bold">{name}</span>
-                  {item.artist !== null && <span className="truncate text-sm text-muted">{item.artist}</span>}
-                  <span className="text-sm text-muted">{t("filesOfRecord", { count: item.media.length })}</span>
-                </span>
-                <span className="flex shrink-0 flex-col items-end">
-                  <Link
-                    href={`/admin/records/${item.id}`}
-                    aria-label={`${t("edit")} ${name}`}
-                    className="flex h-11 items-center text-sm font-bold underline underline-offset-4"
-                  >
-                    {t("edit")}
-                  </Link>
-                  <button
-                    type="button"
-                    aria-label={`${t("removeFromBatch")} ${name}`}
-                    onClick={() => {
-                      remove(item.id);
-                      setItems((current) => current.filter((entry) => entry.id !== item.id));
-                    }}
-                    className="flex h-11 items-center text-sm font-bold text-danger underline underline-offset-4"
-                  >
-                    {t("removeFromBatch")}
-                  </button>
-                </span>
+              <li key={item.id} className="relative rounded-2xl border border-line bg-card">
+                <Link href={recordHref(item.id, postIds)} className="flex items-center gap-3 p-3 pr-14">
+                  <span className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-line">
+                    {item.thumbnailUrl === null ? (
+                      <svg viewBox="0 0 72 72" aria-hidden="true" className="size-10 text-field">
+                        <circle cx="36" cy="36" r="30" fill="none" stroke="currentColor" strokeWidth="4" />
+                        <circle cx="36" cy="36" r="8" fill="currentColor" />
+                      </svg>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element -- private signed link, not optimised by Next
+                      <img src={item.thumbnailUrl} alt="" className="size-full object-cover" />
+                    )}
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-base font-bold">{name}</span>
+                    {item.artist !== null && <span className="truncate text-sm text-muted">{item.artist}</span>}
+                    <span className="text-sm text-muted">{t("filesOfRecord", { count: item.media.length })}</span>
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  aria-label={`${t("removeFromBatch")} ${name}`}
+                  onClick={() => {
+                    remove(item.id);
+                    setItems((current) => current.filter((entry) => entry.id !== item.id));
+                  }}
+                  className="absolute right-1 top-1 flex size-11 items-center justify-center rounded-xl text-ink"
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                </button>
               </li>
             );
           })}
@@ -109,7 +106,7 @@ export function PublishReview({ items: initialItems, initialText }: { items: Rev
           </p>
         )}
         <Link
-          href={`/admin/publish?keep=${items.map((item) => item.id).join(",")}`}
+          href="/admin/publish"
           className="flex h-12 items-center justify-center text-base font-bold underline underline-offset-4"
         >
           {t("addMore")}
