@@ -29,11 +29,11 @@ describe("AccountMenu", () => {
     expect(signOutButton()).toBeNull();
   });
 
-  it("opens with the publish link and the sign out button", () => {
+  it("opens with the sign out button and no publish link, which has its own button on the home screen", () => {
     renderMenu();
     fireEvent.click(toggle());
     expect(toggle().getAttribute("aria-expanded")).toBe("true");
-    expect(publishLink()?.getAttribute("href")).toBe("/admin/publish");
+    expect(publishLink()).toBeNull();
     expect(signOutButton()).not.toBeNull();
   });
 
@@ -62,16 +62,9 @@ describe("AccountMenu", () => {
   it("stays open when the tap is inside the menu", () => {
     renderMenu();
     fireEvent.click(toggle());
-    const link = publishLink();
-    expect(link).not.toBeNull();
-    fireEvent.pointerDown(link as HTMLElement);
-    expect(publishLink()).not.toBeNull();
-  });
-
-  it("closes after choosing an option", () => {
-    renderMenu();
-    fireEvent.click(toggle());
-    fireEvent.click(publishLink() as HTMLElement);
-    expect(publishLink()).toBeNull();
+    const button = signOutButton();
+    expect(button).not.toBeNull();
+    fireEvent.pointerDown(button as HTMLElement);
+    expect(signOutButton()).not.toBeNull();
   });
 });

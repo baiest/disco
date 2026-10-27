@@ -15,10 +15,17 @@ const media = [
   { id: "m2", kind: "video" as const, url: "https://s/2" },
 ];
 
-function renderComposer() {
+// The publish button lives in the page header, so the composer is given the place for it.
+function headerSlot() {
+  const slot = document.createElement("div");
+  document.body.append(slot);
+  return slot;
+}
+
+function renderComposer(slot = headerSlot()) {
   return render(
     <NextIntlClientProvider locale="es" messages={messages}>
-      <FacebookComposer recordIds={["r1", "r2"]} media={media} initialText="hola" />
+      <FacebookComposer recordIds={["r1", "r2"]} media={media} initialText="hola" actionSlot={slot} />
     </NextIntlClientProvider>,
   );
 }
@@ -39,29 +46,25 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  document.body.innerHTML = "";
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
 
 describe("FacebookComposer", () => {
-  it("copies the text", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    stubNavigator({ clipboard: { writeText } });
-    renderComposer();
-    fireEvent.click(button(messages.publish.copy));
-    await waitFor(() => {
-      expect(screen.getByText(messages.publish.copied)).toBeTruthy();
-    });
-    expect(writeText).toHaveBeenCalledWith("hola");
-  });
-
-  it("says when the text could not be copied", async () => {
+  it("puts the publish button in the header, the only way to open Facebook, with no copy or paste step", () => {
     stubNavigator({});
-    renderComposer();
-    fireEvent.click(button(messages.publish.copy));
-    await waitFor(() => {
-      expect(screen.getByText(messages.publish.copyFailed)).toBeTruthy();
-    });
+    const slot = headerSlot();
+    renderComposer(slot);
+    expect(slot.querySelectorAll("button")).toHaveLength(1);
+    expect(slot.textContent).toBe(messages.publish.loadingFiles);
+    expect(screen.getAllByRole("button").map((item) => item.textContent)).toEqual([
+      messages.publish.loadingFiles,
+      messages.publish.done,
+    ]);
+    expect(screen.queryByRole("list")).toBeNull();
+    expect(screen.queryByText("Copiar el texto")).toBeNull();
+    expect(screen.queryByText("En Facebook, pega el texto y publica.")).toBeNull();
   });
 
   it("shares the files once they are ready", async () => {
@@ -108,7 +111,7 @@ describe("FacebookComposer", () => {
     stubNavigator({ canShare: () => true, share: vi.fn().mockResolvedValue(undefined), clipboard: { writeText } });
     render(
       <NextIntlClientProvider locale="es" messages={messages}>
-        <FacebookComposer recordIds={["r1"]} media={media} initialText="" />
+        <FacebookComposer recordIds={["r1"]} media={media} initialText="" actionSlot={headerSlot()} />
       </NextIntlClientProvider>,
     );
     await waitFor(() => {

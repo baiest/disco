@@ -399,14 +399,6 @@ export async function signThumbnails(paths: string[]): Promise<Map<string, strin
   return signedUrlMap(await createSupabaseServerClient(), [...new Set(paths)]);
 }
 
-/** How many available records have never been posted on Facebook (counts up to 200). */
-export async function countUnposted(): Promise<number> {
-  const supabase = await createSupabaseServerClient();
-  const result = await supabase.rpc("search_records", { p_query: "", p_filter: "not_on_facebook", p_limit: 200 });
-  const data: unknown = result.data;
-  return result.error === null && Array.isArray(data) ? data.length : 0;
-}
-
 export interface BatchItemView extends BatchSummary {
   thumbnailUrl: string | null;
 }

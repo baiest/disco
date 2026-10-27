@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { markPostedAction } from "@/app/admin/publish/actions";
 import { clearBatch, notifyBatchChanged } from "@/lib/batch-storage";
 import { copyText, fetchFiles, shareFiles, type MediaLink } from "@/lib/share-media";
@@ -14,11 +15,13 @@ interface Props {
   recordIds: string[];
   media: MediaLink[];
   initialText: string;
+  /** Where the publish button goes: the right side of the page header. Nothing shows until it exists. */
+  actionSlot: HTMLElement | null;
 }
 
 type Files = { state: "loading" } | { state: "failed" } | { state: "ready"; files: File[] };
 
-export function FacebookComposer({ recordIds, media, initialText }: Props) {
+export function FacebookComposer({ recordIds, media, initialText, actionSlot }: Props) {
   const t = useTranslations("publish");
   const router = useRouter();
   const [text, setText] = useState(initialText);
@@ -37,10 +40,6 @@ export function FacebookComposer({ recordIds, media, initialText }: Props) {
   useEffect(() => {
     void load();
   }, [load]);
-
-  async function copy() {
-    setMessage((await copyText(navigator, text)) ? t("copied") : t("copyFailed"));
-  }
 
   async function share() {
     if (files.state !== "ready") {
@@ -74,9 +73,6 @@ export function FacebookComposer({ recordIds, media, initialText }: Props) {
     router.push("/admin");
   }
 
-  const stepNumber = "flex size-9 shrink-0 items-center justify-center rounded-full bg-ink text-base font-bold text-accent-ink";
-  const stepButton = "h-14 flex-1 rounded-2xl border-2 border-ink text-base font-bold disabled:border-line disabled:bg-disabled disabled:text-muted";
-
   return (
     <div className="flex flex-col gap-5 pb-28">
       <div className="flex flex-col gap-2">
@@ -95,24 +91,18 @@ export function FacebookComposer({ recordIds, media, initialText }: Props) {
         <span className="text-sm text-muted">{t("textHint")}</span>
       </div>
 
-      <ol className="flex flex-col gap-3">
-        <li className="flex items-center gap-3">
-          <span className={stepNumber}>1</span>
-          <button type="button" onClick={() => void copy()} className={stepButton}>
-            {t("copy")}
-          </button>
-        </li>
-        <li className="flex items-center gap-3">
-          <span className={stepNumber}>2</span>
-          <button type="button" disabled={files.state !== "ready"} onClick={() => void share()} className={stepButton}>
+      {actionSlot !== null &&
+        createPortal(
+          <button
+            type="button"
+            disabled={files.state !== "ready"}
+            onClick={() => void share()}
+            className="h-12 rounded-2xl bg-accent px-5 text-lg font-bold text-accent-ink disabled:bg-disabled disabled:text-muted"
+          >
             {files.state === "loading" ? t("loadingFiles") : t("share")}
-          </button>
-        </li>
-        <li className="flex items-center gap-3">
-          <span className={stepNumber}>3</span>
-          <span className="text-base leading-snug">{t("pasteStep")}</span>
-        </li>
-      </ol>
+          </button>,
+          actionSlot,
+        )}
 
       {files.state === "failed" && (
         <div role="alert" className="flex flex-col gap-2">
@@ -150,8 +140,6 @@ export function FacebookComposer({ recordIds, media, initialText }: Props) {
           </ul>
         </section>
       )}
-
-      <p className="rounded-2xl bg-line px-4 py-3 text-sm leading-snug text-muted">{t("note")}</p>
 
       <BottomBar>
         <button

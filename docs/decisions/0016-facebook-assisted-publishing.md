@@ -35,3 +35,25 @@ composer. Copying took a separate tap that was easy to skip, so the text showed 
 The "Abrir Facebook con las fotos" button now copies the text first (the clipboard stops working for a
 page once the share sheet is open), then opens the sheet, and tells the owner to paste in Facebook. The
 text also goes along in the share for apps that do use it, such as WhatsApp. With no text, nothing is copied.
+
+## Update: no reminder banner on the home screen
+
+The home screen used to show "N discos sin publicar en Facebook" with a "Publicarlos" link. It got in the
+way every day, so it was removed (and its extra database query with it). Publishing stays one tap away:
+"Publicar en Facebook" is in the menu, a record's page can add it to the batch, and the "Sin publicar en
+Facebook" filter still lists what has never been posted.
+
+## Update: one button instead of three steps
+
+Opening the share sheet already copies the text by itself, and the hint shown afterwards says to paste it.
+The separate "Copiar el texto" step and the "pega el texto y publica" step were removed; the screen is the
+text box and one button, "Abrir Facebook con las fotos".
+The grey explanation about Facebook not allowing apps to post was removed too: it only got in the way.
+
+## Update: the publish button at the top right
+
+The button was in the middle of the screen and not obvious. Now both places put "Publicar" at the top
+right, next to the title: the home screen (it opens the publish screen, and the menu no longer has that
+link) and the publish screen (it copies the text and opens Facebook with the photos). The publish screen
+header is shared (`PublishHeader`); the composer draws its button into a slot of that header, so the share
+state stays in one component.

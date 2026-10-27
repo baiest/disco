@@ -1,8 +1,8 @@
 import { buildFacebookPost } from "@disco/domain";
 import { getFormatter, getTranslations } from "next-intl/server";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BottomBar } from "@/components/bottom-bar";
+import { PublishHeader } from "@/components/publish-header";
 import { PublishReview, type ReviewItem } from "@/components/publish-review";
 import { MAX_POST_MEDIA, parseIds } from "@/lib/facebook-post";
 import { loadPostItems, searchInventory } from "@/server/records-repo";
@@ -19,22 +19,13 @@ export default async function PublishPage({ searchParams }: Props) {
     redirect("/login");
   }
 
-  const header = (
-    <header className="flex items-center gap-1">
-      <Link href="/admin" aria-label={t("back")} className="flex size-12 items-center justify-center text-2xl font-bold">
-        ←
-      </Link>
-      <h1 className="font-display text-2xl font-extrabold">{t("title")}</h1>
-    </header>
-  );
-
   if (ids.length === 0) {
     const rows = (await searchInventory({ query: "", filter: "available" })) ?? [];
     const rank = (row: (typeof rows)[number]) => (row.facebook_posted_at === null ? 0 : row.facebook_needs_update ? 1 : 2);
     const sorted = [...rows].sort((a, b) => rank(a) - rank(b));
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 pb-28 pt-3">
-        {header}
+        <PublishHeader />
         <h2 className="text-lg font-bold">{t("selectTitle")}</h2>
         <p className="text-sm text-muted">{t("selectHint", { max: MAX_POST_MEDIA })}</p>
         {sorted.length === 0 ? (
@@ -85,7 +76,6 @@ export default async function PublishPage({ searchParams }: Props) {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 pt-3">
-      {header}
       <PublishReview
         items={reviewItems}
         initialText={
