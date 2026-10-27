@@ -22,6 +22,25 @@ pnpm dev                              # http://localhost:3000
 Quality gates, also run in CI: `pnpm lint`, `pnpm typecheck`, `pnpm test`,
 `pnpm build`, `pnpm audit:high`.
 
+## Deploy (Vercel)
+
+1. Import the repository in Vercel. Framework: Next.js. Root Directory: `apps/web`,
+   with "Include source files outside of the Root Directory" on (the app uses the
+   workspace packages).
+2. Environment variables, for Production and Preview:
+   `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+   Changes to variables only apply to a new deployment, so redeploy after editing them.
+3. In Supabase (Authentication > URL Configuration) set the Site URL to the Vercel
+   address and add `https://<address>/**` to the Redirect URLs. Then do the email
+   template step from the Login section.
+4. Without the two variables the site still shows the login page, but the login
+   fails with a "try later" message and `/admin` sends visitors to the login. The
+   server log says `Session check failed ... Missing environment variables`.
+
+Hosting caveat: as far as we know the Vercel Hobby plan is for personal, non-commercial
+use only. Check Vercel's terms before the store's customers use the site; the options
+are the Pro plan, another host, or Docker on our own server (decision record 0012).
+
 ## Languages
 
 The interface is in Spanish today and ready for more languages with `next-intl`.

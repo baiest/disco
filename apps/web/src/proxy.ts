@@ -1,9 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { routeDecision } from "@/lib/auth-routes";
+import { sessionOrSignedOut } from "@/lib/session-guard";
 import { checkSession } from "@/server/supabase/session";
 
 export async function proxy(request: NextRequest) {
-  const { response, isSignedIn } = await checkSession(request);
+  const { response, isSignedIn } = await sessionOrSignedOut(
+    () => checkSession(request),
+    { response: NextResponse.next() },
+    (error) => {
+      console.error("Session check failed; treating the visitor as signed out", error);
+    },
+  );
   const { redirectTo } = routeDecision(request.nextUrl.pathname, isSignedIn);
   if (redirectTo === null) {
     return response;

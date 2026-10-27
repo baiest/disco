@@ -9,6 +9,5 @@ export async function sendLoginLink(_previous: LoginFormState, formData: FormDat
   const rawEmail = formData.get("email");
   const email = typeof rawEmail === "string" ? rawEmail : "";
 
-  const supabase = await createSupabaseServerClient();
-  return requestLoginLink(supabase.auth, email);
+  return requestLoginLink(async () => (await createSupabaseServerClient()).auth, email);
 }
