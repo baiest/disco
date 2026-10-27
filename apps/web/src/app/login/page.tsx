@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { LoginForm } from "./login-form";
+import { LoginForm, PasswordForm } from "./login-form";
 
 const LINK_ERRORS = ["invalid_link", "expired_link"] as const;
 
@@ -19,6 +19,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           {t(`linkError.${error}`)}
         </p>
       )}
+      <PasswordForm />
+      <hr className="border-line" />
+      <h2 className="text-xl font-bold">{t("linkTitle")}</h2>
+      <p className="text-base">{t("linkIntro")}</p>
       <LoginForm />
     </main>
   );

@@ -1,7 +1,7 @@
 {
   "login": {
     "title": "Entrar",
-    "intro": "Escribe tu correo y te enviamos un enlace para entrar. No necesitas contraseña.",
+    "intro": "Escribe tu correo y tu contraseña para entrar.",
     "emailLabel": "Tu correo",
     "emailPlaceholder": "nombre@correo.com",
     "submit": "Enviarme el enlace",
@@ -13,7 +13,16 @@
     "linkError": {
       "invalid_link": "Ese enlace no sirve. Pide uno nuevo.",
       "expired_link": "El enlace venció o ya se usó. Pide uno nuevo."
-    }
+    },
+    "passwordLabel": "Tu contraseña",
+    "passwordSubmit": "Entrar",
+    "passwordStatus": {
+      "invalid_input": "Escribe tu correo y tu contraseña.",
+      "wrong_credentials": "El correo o la contraseña no son correctos.",
+      "try_later": "No pudimos entrar ahora. Intenta de nuevo en unos minutos."
+    },
+    "linkTitle": "¿Prefieres un enlace por correo?",
+    "linkIntro": "Escribe tu correo y te enviamos un enlace para entrar, sin contraseña."
   },
   "admin": {
     "title": "Tus discos",
