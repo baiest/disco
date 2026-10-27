@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { userIdFromClaims } from "@/lib/claims";
 import { supabaseConfig } from "./config";
 
 export interface SessionCheck {
@@ -28,6 +29,5 @@ export async function checkSession(request: NextRequest): Promise<SessionCheck> 
     },
   });
 
-  const { data } = await supabase.auth.getUser();
-  return { response, isSignedIn: data.user !== null };
+  return { response, isSignedIn: userIdFromClaims(await supabase.auth.getClaims()) !== null };
 }

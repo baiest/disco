@@ -82,17 +82,32 @@ export function toRecord(row: SearchRow): DiscRecord {
   };
 }
 
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
+
+/** A video cannot be shown in a picture slot, so only image files can be thumbnails. */
+export function isImagePath(path: string): boolean {
+  const dot = path.lastIndexOf(".");
+  return dot >= 0 && IMAGE_EXTENSIONS.includes(path.slice(dot + 1).toLowerCase());
+}
+
 export interface AlbumCard {
   summary: AlbumSummary;
   /** Every copy matched only loosely (a typo), so the card says "similar to what you typed". */
   isClose: boolean;
+  /** Storage path of the first image among the copies, or null when none starts with one. */
+  thumbnailPath: string | null;
 }
 
 /** One card per album, in the order the search ranked them. */
 export function buildAlbumCards(rows: readonly SearchRow[]): AlbumCard[] {
   const closeById = new Map(rows.map((row) => [row.id, row.is_close_match]));
-  return summarizeCopies(rows.map(toRecord)).map((summary) => ({
-    summary,
-    isClose: summary.copies.every((copy) => closeById.get(copy.id) === true),
-  }));
+  const pathById = new Map(rows.map((row) => [row.id, row.first_media_path]));
+  return summarizeCopies(rows.map(toRecord)).map((summary) => {
+    const paths = summary.copies.map((copy) => pathById.get(copy.id) ?? null);
+    return {
+      summary,
+      isClose: summary.copies.every((copy) => closeById.get(copy.id) === true),
+      thumbnailPath: paths.find((path): path is string => path !== null && isImagePath(path)) ?? null,
+    };
+  });
 }

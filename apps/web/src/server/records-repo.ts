@@ -4,12 +4,13 @@ import { isSearchRow, type Search, type SearchRow } from "@/lib/inventory";
 import type { PostRepo } from "@/lib/facebook-publish";
 import type { MediaLink } from "@/lib/share-media";
 import type { DetailRepo } from "@/lib/record-detail";
+import { getCurrentUserId } from "./supabase/current-user";
 import { createSupabaseServerClient } from "./supabase/server";
 
 /** The storage bucket keeps its first name even though it now holds videos too. */
 const BUCKET = "record-photos";
 
-const INVENTORY_LIMIT = 100;
+const INVENTORY_LIMIT = 50;
 
 const OK: RepoResult = { ok: true };
 
@@ -34,10 +35,7 @@ export async function createCaptureRepo(): Promise<CaptureRepo> {
   const supabase = await createSupabaseServerClient();
 
   return {
-    async currentUserId() {
-      const { data } = await supabase.auth.getUser();
-      return data.user?.id ?? null;
-    },
+    currentUserId: getCurrentUserId,
 
     async upsertRecord(record) {
       const { error } = await supabase
@@ -126,6 +124,19 @@ function isRecordRow(value: unknown): value is Record<string, unknown> & { id: s
   return typeof row["id"] === "string" && typeof row["status"] === "string" && STATUSES.includes(row["status"]);
 }
 
+type Client = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
+/** Links that work for an hour for storage paths, as a map from path to link. */
+async function signedUrlMap(supabase: Client, paths: string[]): Promise<Map<string, string>> {
+  if (paths.length === 0) {
+    return new Map();
+  }
+  const signed = await supabase.storage.from(BUCKET).createSignedUrls(paths, SIGNED_URL_SECONDS);
+  return new Map(
+    (signed.data ?? []).flatMap((entry) => (entry.path !== null && entry.signedUrl ? [[entry.path, entry.signedUrl] as const] : [])),
+  );
+}
+
 const text = (value: unknown): string | null => (typeof value === "string" ? value : null);
 
 function toDiscRecord(row: Record<string, unknown> & { id: string; status: RecordStatus }, mediaCount: number): DiscRecord {
@@ -145,27 +156,25 @@ function toDiscRecord(row: Record<string, unknown> & { id: string; status: Recor
   };
 }
 
-async function readRecord(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  recordId: string,
-): Promise<DiscRecord | null> {
+async function readRecordRow(supabase: Client, recordId: string) {
   const found = await supabase.from("records").select(RECORD_COLUMNS).eq("id", recordId).is("deleted_at", null).maybeSingle();
   const row: unknown = found.data;
-  if (found.error !== null || !isRecordRow(row)) {
-    return null;
-  }
-  const media = await supabase.from("record_media").select("id", { count: "exact", head: true }).eq("record_id", recordId);
-  return toDiscRecord(row, media.count ?? 0);
+  return found.error === null && isRecordRow(row) ? row : null;
+}
+
+async function readRecord(supabase: Client, recordId: string): Promise<DiscRecord | null> {
+  const [row, media] = await Promise.all([
+    readRecordRow(supabase, recordId),
+    supabase.from("record_media").select("id", { count: "exact", head: true }).eq("record_id", recordId),
+  ]);
+  return row === null ? null : toDiscRecord(row, media.count ?? 0);
 }
 
 /** Reads and edits one record as the signed in user. */
 export async function createDetailRepo(): Promise<DetailRepo> {
   const supabase = await createSupabaseServerClient();
   return {
-    async currentUserId() {
-      const { data } = await supabase.auth.getUser();
-      return data.user?.id ?? null;
-    },
+    currentUserId: getCurrentUserId,
     getRecord: (recordId) => readRecord(supabase, recordId),
     async updateFields(recordId, values) {
       const { data, error } = await supabase
@@ -199,15 +208,14 @@ export interface RecordDetail {
 /** A record with its photos and videos, as links that work for an hour. Null when it does not exist. */
 export async function loadRecordDetail(recordId: string): Promise<RecordDetail | null> {
   const supabase = await createSupabaseServerClient();
-  const record = await readRecord(supabase, recordId);
-  if (record === null) {
+  // The record and its files are asked for together; the file count comes from the list itself.
+  const [row, listed] = await Promise.all([
+    readRecordRow(supabase, recordId),
+    supabase.from("record_media").select("id, kind, storage_path").eq("record_id", recordId).order("position"),
+  ]);
+  if (row === null) {
     return null;
   }
-  const listed = await supabase
-    .from("record_media")
-    .select("id, kind, storage_path")
-    .eq("record_id", recordId)
-    .order("position");
   const list: unknown[] = Array.isArray(listed.data) ? listed.data : [];
   const items = list.flatMap((entry): { id: string; kind: MediaKind; path: string }[] => {
     const row = entry as Record<string, unknown>;
@@ -216,25 +224,21 @@ export async function loadRecordDetail(recordId: string): Promise<RecordDetail |
       ? [{ id: row["id"], kind, path: row["storage_path"] }]
       : [];
   });
-  const signed = await supabase.storage.from(BUCKET).createSignedUrls(
+  const urls = await signedUrlMap(
+    supabase,
     items.map((item) => item.path),
-    SIGNED_URL_SECONDS,
   );
-  const urls = new Map((signed.data ?? []).flatMap((entry) => (entry.path !== null && entry.signedUrl ? [[entry.path, entry.signedUrl] as const] : [])));
   const media = items.flatMap((item) => {
     const url = urls.get(item.path);
     return url === undefined ? [] : [{ id: item.id, kind: item.kind, url }];
   });
-  return { record, media };
+  return { record: toDiscRecord(row, list.length), media };
 }
 
 export async function createPostRepo(): Promise<PostRepo> {
   const supabase = await createSupabaseServerClient();
   return {
-    async currentUserId() {
-      const { data } = await supabase.auth.getUser();
-      return data.user?.id ?? null;
-    },
+    currentUserId: getCurrentUserId,
     async markPosted(recordIds) {
       const { data, error } = await supabase
         .from("records")
@@ -284,12 +288,9 @@ export async function loadPostItems(recordIds: string[]): Promise<PostItem[]> {
       ? [{ id: row["id"], recordId: row["record_id"], kind, path: row["storage_path"] }]
       : [];
   });
-  const signed = await supabase.storage.from(BUCKET).createSignedUrls(
+  const urls = await signedUrlMap(
+    supabase,
     files.map((file) => file.path),
-    SIGNED_URL_SECONDS,
-  );
-  const urls = new Map(
-    (signed.data ?? []).flatMap((entry) => (entry.path !== null && entry.signedUrl ? [[entry.path, entry.signedUrl] as const] : [])),
   );
   const byId = new Map(records.map((row) => [row.id, row]));
   return recordIds.flatMap((id): PostItem[] => {
@@ -303,4 +304,17 @@ export async function loadPostItems(recordIds: string[]): Promise<PostItem[]> {
     });
     return [{ record: toDiscRecord(row, media.length), media }];
   });
+}
+
+/** Pictures for the inventory cards: a link per storage path, in one call. */
+export async function signThumbnails(paths: string[]): Promise<Map<string, string>> {
+  return signedUrlMap(await createSupabaseServerClient(), [...new Set(paths)]);
+}
+
+/** How many available records have never been posted on Facebook (counts up to 200). */
+export async function countUnposted(): Promise<number> {
+  const supabase = await createSupabaseServerClient();
+  const result = await supabase.rpc("search_records", { p_query: "", p_filter: "not_on_facebook", p_limit: 200 });
+  const data: unknown = result.data;
+  return result.error === null && Array.isArray(data) ? data.length : 0;
 }

@@ -5,15 +5,14 @@ import { redirect } from "next/navigation";
 import { FacebookComposer } from "@/components/facebook-composer";
 import { checkBatch, MAX_POST_MEDIA, parseIds } from "@/lib/facebook-post";
 import { loadPostItems, searchInventory } from "@/server/records-repo";
-import { createSupabaseServerClient } from "@/server/supabase/server";
+import { getCurrentUserId } from "@/server/supabase/current-user";
 
 type Props = { searchParams: Promise<{ ids?: string | string[] }> };
 
 export default async function PublishPage({ searchParams }: Props) {
   const ids = parseIds((await searchParams).ids);
-  const [supabase, t, format] = await Promise.all([createSupabaseServerClient(), getTranslations("publish"), getFormatter()]);
-  const { data } = await supabase.auth.getUser();
-  if (data.user === null) {
+  const [t, format] = await Promise.all([getTranslations("publish"), getFormatter()]);
+  if ((await getCurrentUserId()) === null) {
     redirect("/login");
   }
 

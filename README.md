@@ -37,6 +37,11 @@ Quality gates, also run in CI: `pnpm lint`, `pnpm typecheck`, `pnpm test`,
    fails with a "try later" message and `/admin` sends visitors to the login. The
    server log says `Session check failed ... Missing environment variables`.
 
+Region: the functions run in Portland (`pdx1`, set in `apps/web/vercel.json`) because the Supabase
+project lives in `us-west-2` (Oregon). Keep both in the same region; every page makes several
+requests to Supabase and a long trip between them makes everything slow. If the Supabase project
+is in another region, change `regions` to the closest Vercel region.
+
 Hosting caveat: as far as we know the Vercel Hobby plan is for personal, non-commercial
 use only. Check Vercel's terms before the store's customers use the site; the options
 are the Pro plan, another host, or Docker on our own server (decision record 0012).
