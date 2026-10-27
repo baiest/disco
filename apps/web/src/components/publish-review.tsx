@@ -7,6 +7,7 @@ import { batchTotals } from "@/lib/batch-summary";
 import { MAX_POST_MEDIA } from "@/lib/facebook-post";
 import type { MediaLink } from "@/lib/share-media";
 import { FacebookComposer } from "./facebook-composer";
+import { PublishHeader } from "./publish-header";
 import { useBatch } from "./use-batch";
 
 export interface ReviewItem {
@@ -25,12 +26,14 @@ export function PublishReview({ items: initialItems, initialText }: { items: Rev
   const t = useTranslations("publish");
   const { remove } = useBatch();
   const [items, setItems] = useState(initialItems);
+  const [actionSlot, setActionSlot] = useState<HTMLElement | null>(null);
   const media = useMemo(() => items.flatMap((item) => item.media), [items]);
   const totals = batchTotals(items.map((item) => ({ mediaCount: item.media.length })));
 
   if (items.length === 0) {
     return (
       <div className="flex flex-col gap-4">
+        <PublishHeader />
         <p role="status" className="text-lg font-bold">
           {t("emptyBatch")}
         </p>
@@ -43,6 +46,7 @@ export function PublishReview({ items: initialItems, initialText }: { items: Rev
 
   return (
     <div className="flex flex-col gap-5">
+      <PublishHeader actionRef={setActionSlot} />
       <section className="flex flex-col gap-3" aria-labelledby="review-title">
         <h2 id="review-title" className="text-lg font-bold">
           {t("reviewTitle")}
@@ -112,7 +116,7 @@ export function PublishReview({ items: initialItems, initialText }: { items: Rev
         </Link>
       </section>
 
-      {!totals.over && totals.files > 0 && <FacebookComposer recordIds={items.map((item) => item.id)} media={media} initialText={initialText} />}
+      {!totals.over && totals.files > 0 && <FacebookComposer recordIds={items.map((item) => item.id)} media={media} initialText={initialText} actionSlot={actionSlot} />}
     </div>
   );
 }

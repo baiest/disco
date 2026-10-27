@@ -29,7 +29,8 @@
     "signedInAs": "Entraste como {email}",
     "signOut": "Salir",
     "addRecord": "Agregar disco",
-    "menuLabel": "Menú"
+    "menuLabel": "Menú",
+    "publish": "Publicar"
   },
   "install": {
     "title": "Ten Disco en la pantalla de inicio",
@@ -220,8 +221,8 @@
     "soldLabel": "VENDIDO",
     "textLabel": "Texto de la publicación",
     "textHint": "Escribe lo que quieras decir, como en cualquier publicación.",
-    "share": "Abrir Facebook con las fotos",
-    "loadingFiles": "Preparando las fotos y videos…",
+    "share": "Publicar",
+    "loadingFiles": "Preparando…",
     "loadFailed": "No pudimos preparar las fotos. Revisa tu conexión e inténtalo de nuevo.",
     "retry": "Reintentar",
     "sharedHint": "Elige Facebook en la lista que se abrió.",

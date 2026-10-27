@@ -15,10 +15,17 @@ const media = [
   { id: "m2", kind: "video" as const, url: "https://s/2" },
 ];
 
-function renderComposer() {
+// The publish button lives in the page header, so the composer is given the place for it.
+function headerSlot() {
+  const slot = document.createElement("div");
+  document.body.append(slot);
+  return slot;
+}
+
+function renderComposer(slot = headerSlot()) {
   return render(
     <NextIntlClientProvider locale="es" messages={messages}>
-      <FacebookComposer recordIds={["r1", "r2"]} media={media} initialText="hola" />
+      <FacebookComposer recordIds={["r1", "r2"]} media={media} initialText="hola" actionSlot={slot} />
     </NextIntlClientProvider>,
   );
 }
@@ -39,14 +46,18 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  document.body.innerHTML = "";
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
 
 describe("FacebookComposer", () => {
-  it("has a single button to open Facebook, with no separate copy or paste step", () => {
+  it("puts the publish button in the header, the only way to open Facebook, with no copy or paste step", () => {
     stubNavigator({});
-    renderComposer();
+    const slot = headerSlot();
+    renderComposer(slot);
+    expect(slot.querySelectorAll("button")).toHaveLength(1);
+    expect(slot.textContent).toBe(messages.publish.loadingFiles);
     expect(screen.getAllByRole("button").map((item) => item.textContent)).toEqual([
       messages.publish.loadingFiles,
       messages.publish.done,
@@ -100,7 +111,7 @@ describe("FacebookComposer", () => {
     stubNavigator({ canShare: () => true, share: vi.fn().mockResolvedValue(undefined), clipboard: { writeText } });
     render(
       <NextIntlClientProvider locale="es" messages={messages}>
-        <FacebookComposer recordIds={["r1"]} media={media} initialText="" />
+        <FacebookComposer recordIds={["r1"]} media={media} initialText="" actionSlot={headerSlot()} />
       </NextIntlClientProvider>,
     );
     await waitFor(() => {

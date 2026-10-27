@@ -6,8 +6,8 @@ import messages from "../../messages/es.json";
 vi.mock("@/app/admin/publish/actions", () => ({ markPostedAction: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("./facebook-composer", () => ({
-  FacebookComposer: ({ recordIds, media }: { recordIds: string[]; media: unknown[] }) => (
-    <div data-testid="composer">{`${recordIds.join(",")}|${String(media.length)}`}</div>
+  FacebookComposer: ({ recordIds, media, actionSlot }: { recordIds: string[]; media: unknown[]; actionSlot: HTMLElement | null }) => (
+    <div data-testid="composer" data-slot={actionSlot === null ? "no" : "yes"}>{`${recordIds.join(",")}|${String(media.length)}`}</div>
   ),
 }));
 
@@ -59,6 +59,20 @@ describe("PublishReview", () => {
     expect(screen.queryByText("Disco a")).toBeNull();
     expect(screen.getByText("1 disco · 2 de 30 fotos y videos")).toBeTruthy();
     expect(JSON.parse(localStorage.getItem("disco:batch") ?? "[]")).toEqual(["b", "c"]);
+  });
+
+  it("has a header with a way back, and gives the composer a place in it for the publish button", () => {
+    const { container } = renderReview([item("a", 1)]);
+    const header = container.querySelector("header");
+    expect(header?.querySelector("a")?.getAttribute("href")).toBe("/admin");
+    expect(header?.textContent).toContain(messages.publish.title);
+    expect(screen.getByTestId("composer").dataset.slot).toBe("yes");
+  });
+
+  it("keeps the header with its way back when everything was taken out", () => {
+    const { container } = renderReview([item("a", 1)]);
+    fireEvent.click(screen.getByRole("button", { name: `${messages.publish.removeFromBatch} Disco a` }));
+    expect(container.querySelector("header a")?.getAttribute("href")).toBe("/admin");
   });
 
   it("gives the composer only the records that are still in", () => {

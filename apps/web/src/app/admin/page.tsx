@@ -37,7 +37,15 @@ export default async function AdminPage({ searchParams }: Props) {
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 pb-32 pt-4">
       <header className="flex items-center justify-between gap-3">
         <h1 className="font-display text-3xl font-extrabold">{admin("title")}</h1>
-        <AccountMenu />
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/publish"
+            className="flex h-12 items-center rounded-2xl bg-accent px-5 text-lg font-bold text-accent-ink"
+          >
+            {admin("publish")}
+          </Link>
+          <AccountMenu />
+        </div>
       </header>
 
       <InstallHint />

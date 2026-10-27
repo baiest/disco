@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { markPostedAction } from "@/app/admin/publish/actions";
 import { clearBatch, notifyBatchChanged } from "@/lib/batch-storage";
 import { copyText, fetchFiles, shareFiles, type MediaLink } from "@/lib/share-media";
@@ -14,11 +15,13 @@ interface Props {
   recordIds: string[];
   media: MediaLink[];
   initialText: string;
+  /** Where the publish button goes: the right side of the page header. Nothing shows until it exists. */
+  actionSlot: HTMLElement | null;
 }
 
 type Files = { state: "loading" } | { state: "failed" } | { state: "ready"; files: File[] };
 
-export function FacebookComposer({ recordIds, media, initialText }: Props) {
+export function FacebookComposer({ recordIds, media, initialText, actionSlot }: Props) {
   const t = useTranslations("publish");
   const router = useRouter();
   const [text, setText] = useState(initialText);
@@ -88,14 +91,18 @@ export function FacebookComposer({ recordIds, media, initialText }: Props) {
         <span className="text-sm text-muted">{t("textHint")}</span>
       </div>
 
-      <button
-        type="button"
-        disabled={files.state !== "ready"}
-        onClick={() => void share()}
-        className="h-16 rounded-2xl border-2 border-ink text-lg font-bold disabled:border-line disabled:bg-disabled disabled:text-muted"
-      >
-        {files.state === "loading" ? t("loadingFiles") : t("share")}
-      </button>
+      {actionSlot !== null &&
+        createPortal(
+          <button
+            type="button"
+            disabled={files.state !== "ready"}
+            onClick={() => void share()}
+            className="h-12 rounded-2xl bg-accent px-5 text-lg font-bold text-accent-ink disabled:bg-disabled disabled:text-muted"
+          >
+            {files.state === "loading" ? t("loadingFiles") : t("share")}
+          </button>,
+          actionSlot,
+        )}
 
       {files.state === "failed" && (
         <div role="alert" className="flex flex-col gap-2">

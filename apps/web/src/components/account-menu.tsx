@@ -1,14 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "@/app/admin/actions";
 
 /** The hamburger button at the top right: what is not needed every day lives here. */
 export function AccountMenu() {
   const t = useTranslations("admin");
-  const publish = useTranslations("publish");
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -57,15 +55,6 @@ export function AccountMenu() {
       </button>
       {open && (
         <div className="absolute right-0 top-14 z-20 w-64 overflow-hidden rounded-2xl border-2 border-ink bg-card shadow-lg">
-          <Link
-            href="/admin/publish"
-            onClick={() => {
-              setOpen(false);
-            }}
-            className={`${item} border-b border-line`}
-          >
-            {publish("title")}
-          </Link>
           <form action={signOut}>
             <button type="submit" className={item}>
               {t("signOut")}
