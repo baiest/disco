@@ -1,4 +1,5 @@
 # Local Supabase stack (supabase CLI). Not validated in CI: it needs Docker.
+# Migrations in supabase/migrations are applied to production by the Supabase GitHub integration.
 project_id = "disco"
 
 [api]
