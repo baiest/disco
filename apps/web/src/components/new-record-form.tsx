@@ -32,6 +32,7 @@ import {
   type MediaItem,
 } from "@/lib/media-items";
 import { uploadMedia, type UploadMediaJob } from "@/lib/upload-media";
+import { ActionSheet } from "./action-sheet";
 import { BottomBar } from "./bottom-bar";
 import { PriceInput } from "./price-input";
 
@@ -73,6 +74,10 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [choosing, setChoosing] = useState(false);
+  const cameraInput = useRef<HTMLInputElement>(null);
+  const videoInput = useRef<HTMLInputElement>(null);
+  const galleryInput = useRef<HTMLInputElement>(null);
   const [batch, setBatch] = useState<string[]>([]);
 
   const jobs = useRef(new Map<string, UploadMediaJob>());
@@ -376,21 +381,28 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
               )}
             </li>
           ))}
+          {Array.from({ length: Math.max(0, MAX_MEDIA - items.length) }, (_, index) => (
+            <li key={`empty-${String(index)}`}>
+              <button
+                type="button"
+                aria-label={t("addMedia")}
+                onClick={() => {
+                  setChoosing(true);
+                }}
+                className="flex aspect-square w-full items-center justify-center rounded-2xl border-2 border-dashed border-field bg-card text-accent active:bg-line"
+              >
+                {index === 0 && (
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                )}
+              </button>
+            </li>
+          ))}
         </ul>
-        <div className="grid grid-cols-2 gap-2">
-          <label className="flex h-14 cursor-pointer items-center justify-center rounded-2xl bg-ink text-base font-bold text-accent-ink">
-            {t("takePhoto")}
-            <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={onPick} />
-          </label>
-          <label className="flex h-14 cursor-pointer items-center justify-center rounded-2xl border-2 border-ink text-base font-bold">
-            {t("recordVideo")}
-            <input type="file" accept="video/*" capture="environment" className="sr-only" onChange={onPick} />
-          </label>
-        </div>
-        <label className="flex h-12 cursor-pointer items-center justify-center text-base font-bold underline underline-offset-4">
-          {t("chooseGallery")}
-          <input type="file" accept="image/*,video/*" multiple className="sr-only" onChange={onPick} />
-        </label>
+        <input ref={cameraInput} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={onPick} />
+        <input ref={videoInput} type="file" accept="video/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={onPick} />
+        <input ref={galleryInput} type="file" accept="image/*,video/*" multiple className="sr-only" tabIndex={-1} aria-hidden="true" onChange={onPick} />
         <p className="text-sm text-muted">{t("mediaHint", { max: MAX_MEDIA })}</p>
       </section>
 
@@ -478,6 +490,21 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
           {t("saveDraftAndExit")}
         </button>
       </BottomBar>
+
+      {choosing && (
+        <ActionSheet
+          title={t("sheet.title")}
+          cancelLabel={t("sheet.cancel")}
+          onClose={() => {
+            setChoosing(false);
+          }}
+          options={[
+            { key: "camera", label: t("sheet.camera"), onSelect: () => cameraInput.current?.click() },
+            { key: "video", label: t("sheet.video"), onSelect: () => videoInput.current?.click() },
+            { key: "gallery", label: t("sheet.gallery"), onSelect: () => galleryInput.current?.click() },
+          ]}
+        />
+      )}
     </form>
   );
 }
