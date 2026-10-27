@@ -93,7 +93,7 @@ describe("readVideoDuration", () => {
     URL.createObjectURL = vi.fn(() => "blob:v");
     const revoke = vi.fn();
     URL.revokeObjectURL = revoke;
-    const video: { onloadedmetadata?: () => void; onerror?: () => void; duration: number; preload?: string; src?: string } = { duration };
+    const video: { onloadedmetadata?: () => void; onerror?: () => void; duration: number; preload?: string; setAttribute: () => void } = { duration, setAttribute: () => undefined };
     vi.spyOn(document, "createElement").mockReturnValue(video as unknown as HTMLElement);
     return { video, revoke, fire: () => (event === "error" ? video.onerror?.() : video.onloadedmetadata?.()) };
   }

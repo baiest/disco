@@ -58,7 +58,7 @@ export function readVideoDuration(file: Blob): Promise<number | undefined> {
     video.onerror = () => {
       finish(undefined);
     };
-    video.src = url;
+    video.setAttribute("src", url);
   });
 }
 
