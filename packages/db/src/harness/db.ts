@@ -68,16 +68,33 @@ export async function inTransaction(fn: (session: Session) => Promise<void>): Pr
 export async function insertRecord(
   session: Session,
   ownerId: string,
-  fields: { status?: string; photos?: number; priceCop?: number | null } = {},
+  fields: {
+    status?: string;
+    photos?: number;
+    priceCop?: number | null;
+    title?: string | null;
+    artist?: string | null;
+    notes?: string | null;
+  } = {},
 ): Promise<string> {
   const id = randomUUID();
   await session.asAdmin();
-  await session.query("insert into public.records (id, owner_id) values ($1, $2)", [id, ownerId]);
+  await session.query("insert into public.records (id, owner_id, title, artist, notes) values ($1, $2, $3, $4, $5)", [
+    id,
+    ownerId,
+    fields.title ?? null,
+    fields.artist ?? null,
+    fields.notes ?? null,
+  ]);
   for (let position = 0; position < (fields.photos ?? 0); position += 1) {
     await insertMedia(session, ownerId, id, position);
   }
   if (fields.status !== undefined && fields.status !== "draft") {
-    await session.query("update public.records set status = $2 where id = $1", [id, fields.status]);
+    // A draft can only become available first (see the database rules).
+    await session.query("update public.records set status = 'available' where id = $1", [id]);
+    if (fields.status !== "available") {
+      await session.query("update public.records set status = $2 where id = $1", [id, fields.status]);
+    }
   }
   if (fields.priceCop !== undefined) {
     await session.query("update public.records set price_cop = $2 where id = $1", [id, fields.priceCop]);

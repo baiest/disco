@@ -8,9 +8,12 @@ export function makeRecord(overrides: Partial<DiscRecord> = {}): DiscRecord {
     priceCop: null,
     status: "draft",
     notes: null,
-    photoCount: 0,
+    mediaCount: 0,
     updatedAt: "2026-01-01T00:00:00.000Z",
     deletedAt: null,
+    soldAt: null,
+    facebookPostedAt: null,
+    facebookNeedsUpdate: false,
     ...overrides,
   };
 }

@@ -1,5 +1,10 @@
+export { summarizeCopies } from "./copies";
+export type { AlbumSummary, StockState } from "./copies";
+export { buildFacebookPost } from "./facebook";
+export type { FacebookLabels } from "./facebook";
 export { groupRecords } from "./grouping";
 export type { GroupedRecords } from "./grouping";
+export { normalizeText } from "./normalize";
 export { formatPrice, MAX_PRICE_COP, parsePrice } from "./price";
 export type { ParsePriceResult } from "./price";
 export { canPublish } from "./publish";

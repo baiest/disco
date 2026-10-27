@@ -6,7 +6,7 @@ export interface StatusUndo {
   previousStatus: RecordStatus;
 }
 
-export type StatusFailure = "no_photo" | "publish_first" | "same_status";
+export type StatusFailure = "no_media" | "publish_first" | "same_status";
 
 export type ChangeStatusResult =
   | { ok: true; record: DiscRecord; undo: StatusUndo }
