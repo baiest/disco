@@ -27,3 +27,16 @@ together, and wanted to see which ones he has in the post, and to take one out o
 - The batch lives in one browser: another phone or a cleared browser starts with an empty batch.
 - Removing a record from the batch does not touch the record.
 - The text of a post starts empty for a batch and with the suggested text for a batch of one record.
+
+## Update: search and see what is chosen
+
+The "which discs" screen was a plain list of checkboxes: no search, no pictures and no way to see what was
+already chosen. It now has a search box (same search as the admin, over available records), a miniature on
+every row, and the chosen discs shown above the list with the batch card.
+
+- The choice is the batch kept on the phone, not a form. A search is a normal page load, so the batch is what
+  makes the ticks survive it. The `keep` parameter is gone; "Agregar más discos" opens the screen and the batch
+  does the rest. "Preparar publicación (N)" opens the review with exactly the chosen discs.
+- In the review, the whole card opens the record (no "Editar" button) and removing is a cross at the top right.
+  The record page gets `from=publish&ids=...`, and its back arrow returns to that review. Only record ids are
+  read from the address (`lib/back-target.ts`), never a path, so it cannot be used to send the owner elsewhere.
