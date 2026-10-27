@@ -259,4 +259,45 @@ describe("NewRecordForm", () => {
     renderForm();
     expect(actions.loadDraftMediaAction).not.toHaveBeenCalled();
   });
+
+  describe("the price field", () => {
+    const price = () => screen.getByLabelText<HTMLInputElement>(messages.capture.fields.price);
+
+    it("groups the digits as they are typed", () => {
+      renderForm();
+      fireEvent.change(price(), { target: { value: "1500" } });
+      expect(price().value).toBe("1.500");
+      fireEvent.change(price(), { target: { value: "1.5000" } });
+      expect(price().value).toBe("15.000");
+    });
+
+    it("leaves '80 mil' as typed", () => {
+      renderForm();
+      fireEvent.change(price(), { target: { value: "80 mil" } });
+      expect(price().value).toBe("80 mil");
+    });
+
+    it("shows a dollar sign and a numeric keyboard", () => {
+      renderForm();
+      expect(price().inputMode).toBe("numeric");
+      expect(screen.getByText("$")).toBeTruthy();
+    });
+
+    it("sends the grouped text, which the server understands", async () => {
+      renderForm();
+      pickPhoto();
+      await waitFor(() => {
+        expect(saveButton().disabled).toBe(false);
+      });
+      fireEvent.change(price(), { target: { value: "80000" } });
+      fireEvent.click(saveButton());
+      await waitFor(() => {
+        expect(screen.getByText(messages.capture.saved)).toBeTruthy();
+      });
+      expect(actions.saveRecordAction).toHaveBeenLastCalledWith(
+        expect.objectContaining({ input: expect.objectContaining({ priceText: "80.000" }) as unknown }),
+      );
+    });
+  });
 });
+

@@ -102,4 +102,17 @@ describe("RecordDetail", () => {
       expect(screen.getByText(messages.detail.saveError.failed)).toBeTruthy();
     });
   });
+
+  it("shows the saved price grouped and keeps grouping as it is edited", () => {
+    render(
+      <NextIntlClientProvider locale="es" messages={messages}>
+        <RecordDetail recordId="r1" initialStatus="available" initialFields={{ ...fields, priceText: "80000" }} soldOn={null} media={[]} />
+      </NextIntlClientProvider>,
+    );
+    const price = screen.getByLabelText<HTMLInputElement>(messages.capture.fields.price);
+    expect(price.value).toBe("80.000");
+    fireEvent.change(price, { target: { value: "1200000" } });
+    expect(price.value).toBe("1.200.000");
+  });
 });
+

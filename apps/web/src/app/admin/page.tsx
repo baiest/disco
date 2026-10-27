@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccountMenu } from "@/components/account-menu";
 import { AlbumCard } from "@/components/album-card";
+import { BottomBar } from "@/components/bottom-bar";
 import { buildAlbumCards, FILTERS, parseSearch } from "@/lib/inventory";
 import { countUnposted, searchInventory, signThumbnails } from "@/server/records-repo";
 import { getCurrentUserId } from "@/server/supabase/current-user";
@@ -115,7 +116,7 @@ export default async function AdminPage({ searchParams }: Props) {
         </Link>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-line bg-paper px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3">
+      <BottomBar>
         <Link
           href="/admin/records/new"
           className="mx-auto flex h-16 max-w-md items-center justify-center gap-2 rounded-2xl bg-accent text-xl font-bold text-accent-ink"
@@ -125,7 +126,7 @@ export default async function AdminPage({ searchParams }: Props) {
           </svg>
           {admin("addRecord")}
         </Link>
-      </div>
+      </BottomBar>
     </main>
   );
 }

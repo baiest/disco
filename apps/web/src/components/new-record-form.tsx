@@ -32,6 +32,8 @@ import {
   type MediaItem,
 } from "@/lib/media-items";
 import { uploadMedia, type UploadMediaJob } from "@/lib/upload-media";
+import { BottomBar } from "./bottom-bar";
+import { PriceInput } from "./price-input";
 
 const EMPTY_FIELDS: RecordInput = { title: "", artist: "", priceText: "", notes: "" };
 const FIELDS = [
@@ -409,11 +411,19 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
               }}
               className="rounded-2xl border-2 border-field bg-card px-4 py-3 text-lg"
             />
+          ) : name === "priceText" ? (
+            <PriceInput
+              id={name}
+              value={fields[name]}
+              placeholder={t(`fields.${placeholder}`)}
+              onChange={(value) => {
+                changeField(name, value);
+              }}
+            />
           ) : (
             <input
               id={name}
               type="text"
-              inputMode={name === "priceText" ? "numeric" : "text"}
               value={fields[name]}
               placeholder={t(`fields.${placeholder}`)}
               onChange={(event) => {
@@ -445,7 +455,7 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
         </Link>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 flex flex-col gap-2 border-t border-line bg-paper px-4 pb-5 pt-3">
+      <BottomBar className="flex flex-col gap-2">
         {!canPublish && !saving && (
           <p className="text-center text-sm text-muted">{busy ? t("waitUploads") : t("needMedia")}</p>
         )}
@@ -466,7 +476,7 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
         >
           {t("saveDraftAndExit")}
         </button>
-      </div>
+      </BottomBar>
     </form>
   );
 }

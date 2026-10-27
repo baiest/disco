@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { markPostedAction } from "@/app/admin/publish/actions";
 import { clearBatch } from "@/lib/batch-storage";
 import { copyText, fetchFiles, shareFiles, type MediaLink } from "@/lib/share-media";
+import { BottomBar } from "./bottom-bar";
 
 const DONE_ERRORS = ["invalid_ids", "unauthenticated", "failed"] as const;
 
@@ -149,7 +150,7 @@ export function FacebookComposer({ recordIds, media, initialText }: Props) {
 
       <p className="rounded-2xl bg-line px-4 py-3 text-sm leading-snug text-muted">{t("note")}</p>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-line bg-paper px-4 pb-5 pt-3">
+      <BottomBar>
         <button
           type="button"
           disabled={busy}
@@ -158,7 +159,7 @@ export function FacebookComposer({ recordIds, media, initialText }: Props) {
         >
           {t("done")}
         </button>
-      </div>
+      </BottomBar>
     </div>
   );
 }
