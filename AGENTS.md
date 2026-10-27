@@ -159,7 +159,9 @@ Rules:
 3. Commit following section 8.
 4. Open a PR using `.github/pull_request_template.md`. Describe the change and
    how to verify it.
-5. CI must be green and the PR approved before merge. Merge by squash.
+5. CI must be green and the PR approved before merge. Merge with a merge
+   commit, never squash: every commit of the branch lands on `main`, so each
+   one must follow section 8.
 6. Never force-push to `main`.
 
 Before writing code for a new phase or feature: inspect the repo, present a
@@ -176,8 +178,8 @@ decision, consequences) and mirror it in the project decision log document.
 - The repository is public but **not open source**. There is no LICENSE file on
   purpose: all rights are reserved. Do not add a license, and do not copy
   third-party code whose license conflicts with that.
-- `main` is protected: pull request required, required status checks, linear
-  history, no force pushes, no deletions, and the rules also apply to admins.
+- `main` is protected: pull request required, required status checks, merge
+  commits only, no force pushes, no deletions, and the rules also apply to admins.
 - Enable secret scanning and push protection on the repository.
 
 ## 11. Common commands
