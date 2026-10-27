@@ -18,18 +18,20 @@ type Props = { searchParams: Promise<{ q?: string | string[]; filter?: string | 
 export default async function AdminPage({ searchParams }: Props) {
   const params = await searchParams;
   const search = parseSearch(params);
-  const [t, admin] = await Promise.all([getTranslations("inventory"), getTranslations("admin")]);
-  if ((await getCurrentUserId()) === null) {
-    // The proxy already redirects; this check keeps the page safe on its own.
-    redirect("/login");
-  }
-
   const isPlainList = search.query === "" && search.filter === "all";
   const undoId = parseIds(params.undo)[0];
-  const [rows, deleted] = await Promise.all([
+  // The session check, the list and the texts are asked for together; the proxy already redirects visitors who
+  // are signed out, so the check here only has to be done before anything is shown.
+  const [t, admin, userId, rows, deleted] = await Promise.all([
+    getTranslations("inventory"),
+    getTranslations("admin"),
+    getCurrentUserId(),
     searchInventory(search),
     undoId === undefined ? false : isRecordDeleted(undoId),
   ]);
+  if (userId === null) {
+    redirect("/login");
+  }
   const cards = rows === null ? [] : buildAlbumCards(rows);
   const pictures = await signThumbnails(cards.flatMap((card) => (card.thumbnailPath === null ? [] : [card.thumbnailPath])));
 

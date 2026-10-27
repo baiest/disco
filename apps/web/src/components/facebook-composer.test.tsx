@@ -57,14 +57,38 @@ describe("FacebookComposer", () => {
     const slot = headerSlot();
     renderComposer(slot);
     expect(slot.querySelectorAll("button")).toHaveLength(1);
-    expect(slot.textContent).toBe(messages.publish.loadingFiles);
-    expect(screen.getAllByRole("button").map((item) => item.textContent)).toEqual([
-      messages.publish.loadingFiles,
-      messages.publish.done,
-    ]);
+    expect(slot.textContent).toBe("Preparando 0 de 2…");
+    expect(screen.getAllByRole("button").map((item) => item.textContent)).toEqual(["Preparando 0 de 2…", messages.publish.done]);
     expect(screen.queryByRole("list")).toBeNull();
     expect(screen.queryByText("Copiar el texto")).toBeNull();
     expect(screen.queryByText("En Facebook, pega el texto y publica.")).toBeNull();
+  });
+
+  it("shows how many files are ready while it prepares them", async () => {
+    const releases: (() => void)[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            releases.push(() => {
+              resolve({ ok: true, blob: () => Promise.resolve(new Blob(["x"])) });
+            });
+          }),
+      ),
+    );
+    stubNavigator({});
+    const slot = headerSlot();
+    renderComposer(slot);
+    expect(slot.textContent).toBe("Preparando 0 de 2…");
+    releases[0]?.();
+    await waitFor(() => {
+      expect(slot.textContent).toBe("Preparando 1 de 2…");
+    });
+    releases[1]?.();
+    await waitFor(() => {
+      expect(button(messages.publish.share).disabled).toBe(false);
+    });
   });
 
   it("shares the files once they are ready", async () => {
