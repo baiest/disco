@@ -18,7 +18,8 @@ text and price, and mark it sold or unavailable in a few taps, with a way back.
 
 ## Consequences
 
-- Undo is a normal status change, so the sale date is set by the database trigger each
-  time a record becomes sold and keeps its last value otherwise.
+- Undo is a normal status change. The database trigger sets the sale date when a record
+  becomes sold and clears it when it leaves sold, so undoing a change away from sold
+  gives it a new sale date (today).
 - No delete yet; soft delete with undo, adding another copy and assisted Facebook
   publishing come in later tickets.
