@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { markPostedAction } from "@/app/admin/publish/actions";
-import { clearBatch } from "@/lib/batch-storage";
+import { clearBatch, notifyBatchChanged } from "@/lib/batch-storage";
 import { copyText, fetchFiles, shareFiles, type MediaLink } from "@/lib/share-media";
 import { BottomBar } from "./bottom-bar";
 
@@ -70,6 +70,7 @@ export function FacebookComposer({ recordIds, media, initialText }: Props) {
       return;
     }
     clearBatch(localStorage);
+    notifyBatchChanged();
     router.push("/admin");
   }
 

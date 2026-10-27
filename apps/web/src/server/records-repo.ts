@@ -1,6 +1,7 @@
 import type { CaptureRepo, RepoResult } from "@/lib/capture";
 import type { DiscRecord, MediaKind, RecordStatus } from "@disco/domain";
 import { isSearchRow, type Search, type SearchRow } from "@/lib/inventory";
+import { buildBatchSummaries, type BatchSummary } from "@/lib/batch-summary";
 import type { PostRepo } from "@/lib/facebook-publish";
 import type { MediaLink } from "@/lib/share-media";
 import type { DetailRepo } from "@/lib/record-detail";
@@ -136,7 +137,7 @@ export async function searchInventory(search: Search): Promise<SearchRow[] | nul
 }
 
 const RECORD_COLUMNS =
-  "id, title, artist, price_cop, status, notes, updated_at, sold_at, facebook_posted_at, facebook_needs_update";
+  "id, title, artist, price_cop, status, notes, updated_at, sold_at, facebook_posted_at, facebook_needs_update, show_price_public";
 const STATUSES: readonly string[] = ["draft", "available", "sold", "unavailable"];
 const SIGNED_URL_SECONDS = 60 * 60;
 
@@ -215,7 +216,26 @@ export async function createDetailRepo(): Promise<DetailRepo> {
       }
       return Array.isArray(data) && data.length > 0 ? OK : { ok: false, reason: "other" };
     },
+    async setShowPricePublic(recordId, show) {
+      const { data, error } = await supabase.from("records").update({ show_price_public: show }).eq("id", recordId).select("id");
+      return error === null && Array.isArray(data) && data.length > 0 ? OK : { ok: false, reason: "other" };
+    },
+    async setDeleted(recordId, deleted) {
+      const { data, error } = await supabase
+        .from("records")
+        .update({ deleted_at: deleted ? new Date().toISOString() : null })
+        .eq("id", recordId)
+        .select("id");
+      return error === null && Array.isArray(data) && data.length > 0 ? OK : { ok: false, reason: "other" };
+    },
   };
+}
+
+/** True when the record exists and is deleted: the home screen only offers to bring it back then. */
+export async function isRecordDeleted(recordId: string): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const found = await supabase.from("records").select("id").eq("id", recordId).not("deleted_at", "is", null).maybeSingle();
+  return found.error === null && found.data !== null;
 }
 
 export interface MediaView {
@@ -227,6 +247,8 @@ export interface MediaView {
 export interface RecordDetail {
   record: DiscRecord;
   media: MediaView[];
+  /** Customers see this record's price in the public catalog. */
+  showPricePublic: boolean;
 }
 
 /** A record with its photos and videos, as links that work for an hour. Null when it does not exist. */
@@ -267,7 +289,7 @@ export async function loadRecordDetail(recordId: string): Promise<RecordDetail |
     const url = urls.get(item.path);
     return url === undefined ? [] : [{ id: item.id, kind: item.kind, url }];
   });
-  return { record: toDiscRecord(row, list.length), media };
+  return { record: toDiscRecord(row, list.length), media, showPricePublic: row["show_price_public"] === true };
 }
 
 export interface RestoredMedia {
@@ -384,3 +406,48 @@ export async function countUnposted(): Promise<number> {
   const data: unknown = result.data;
   return result.error === null && Array.isArray(data) ? data.length : 0;
 }
+
+export interface BatchItemView extends BatchSummary {
+  thumbnailUrl: string | null;
+}
+
+/**
+ * The records of the owner's Facebook batch that can still be posted (available, not deleted), in the order
+ * they were added, with a link for each miniature. A record that no longer qualifies just drops out.
+ */
+export async function loadBatchSummaries(ids: string[]): Promise<BatchItemView[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  const supabase = await createSupabaseServerClient();
+  const found = await supabase.from("records").select("id, title, artist").in("id", ids).eq("status", "available").is("deleted_at", null);
+  const rows: unknown[] = Array.isArray(found.data) ? found.data : [];
+  const records = rows.flatMap((entry): { id: string; title: string | null; artist: string | null }[] => {
+    const row = entry as Record<string, unknown>;
+    return typeof row["id"] === "string" ? [{ id: row["id"], title: text(row["title"]), artist: text(row["artist"]) }] : [];
+  });
+  if (records.length === 0) {
+    return [];
+  }
+  const listed = await supabase
+    .from("record_media")
+    .select("record_id, storage_path, position")
+    .in("record_id", records.map((record) => record.id))
+    .order("position");
+  const files = (Array.isArray(listed.data) ? (listed.data as unknown[]) : []).flatMap((entry): { recordId: string; path: string }[] => {
+    const row = entry as Record<string, unknown>;
+    return typeof row["record_id"] === "string" && typeof row["storage_path"] === "string"
+      ? [{ recordId: row["record_id"], path: row["storage_path"] }]
+      : [];
+  });
+  const summaries = buildBatchSummaries(ids, records, files);
+  const urls = await signedUrlMap(
+    supabase,
+    summaries.flatMap((summary) => (summary.thumbnailPath === null ? [] : [summary.thumbnailPath])),
+  );
+  return summaries.map((summary) => ({
+    ...summary,
+    thumbnailUrl: summary.thumbnailPath === null ? null : (urls.get(summary.thumbnailPath) ?? null),
+  }));
+}
+

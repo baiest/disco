@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { BatchSummaryCard } from "@/components/batch-summary-card";
 import { RecordDetail } from "@/components/record-detail";
 import { loadRecordDetail } from "@/server/records-repo";
 import { getCurrentUserId } from "@/server/supabase/current-user";
@@ -20,7 +21,7 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
   if (detail === null) {
     notFound();
   }
-  const { record, media } = detail;
+  const { record, media, showPricePublic } = detail;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 pt-3">
@@ -30,6 +31,7 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
         </Link>
         <h1 className="font-display text-2xl font-extrabold">{record.title ?? t("untitled")}</h1>
       </header>
+      <BatchSummaryCard />
       <RecordDetail
         recordId={record.id}
         initialStatus={record.status}
@@ -41,6 +43,8 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
         }}
         soldOn={record.soldAt === null ? null : format.dateTime(new Date(record.soldAt), { day: "numeric", month: "short" })}
         media={media}
+        postedOnFacebook={record.facebookPostedAt !== null}
+        showPricePublic={showPricePublic}
       />
     </main>
   );

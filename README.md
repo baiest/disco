@@ -30,6 +30,9 @@ Quality gates, also run in CI: `pnpm lint`, `pnpm typecheck`, `pnpm test`,
 2. Environment variables, for Production and Preview:
    `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
    Changes to variables only apply to a new deployment, so redeploy after editing them.
+   Optional: `NEXT_PUBLIC_WHATSAPP_NUMBER` (country code and digits only, for example
+   `573001234567`) turns on the "Preguntar por WhatsApp" button in the public catalog. It is
+   public information; without it the button is hidden.
 3. In Supabase (Authentication > URL Configuration) set the Site URL to the Vercel
    address and add `https://<address>/**` to the Redirect URLs. Then do the email
    template step from the Login section.

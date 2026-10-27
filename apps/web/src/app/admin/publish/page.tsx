@@ -3,15 +3,17 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BottomBar } from "@/components/bottom-bar";
-import { FacebookComposer } from "@/components/facebook-composer";
-import { checkBatch, MAX_POST_MEDIA, parseIds } from "@/lib/facebook-post";
+import { PublishReview, type ReviewItem } from "@/components/publish-review";
+import { MAX_POST_MEDIA, parseIds } from "@/lib/facebook-post";
 import { loadPostItems, searchInventory } from "@/server/records-repo";
 import { getCurrentUserId } from "@/server/supabase/current-user";
 
-type Props = { searchParams: Promise<{ ids?: string | string[] }> };
+type Props = { searchParams: Promise<{ ids?: string | string[]; keep?: string | string[] }> };
 
 export default async function PublishPage({ searchParams }: Props) {
-  const ids = parseIds((await searchParams).ids);
+  const params = await searchParams;
+  const ids = parseIds(params.ids);
+  const keep = new Set(parseIds(params.keep));
   const [t, format] = await Promise.all([getTranslations("publish"), getFormatter()]);
   if ((await getCurrentUserId()) === null) {
     redirect("/login");
@@ -43,7 +45,7 @@ export default async function PublishPage({ searchParams }: Props) {
               {sorted.map((row) => (
                 <li key={row.id}>
                   <label className="flex min-h-16 items-center gap-3 rounded-2xl border border-line bg-card px-4 py-2">
-                    <input type="checkbox" name="ids" value={row.id} className="size-6 accent-accent" />
+                    <input type="checkbox" name="ids" value={row.id} defaultChecked={keep.has(row.id)} className="size-6 accent-accent" />
                     <span className="flex min-w-0 flex-col">
                       <span className="truncate text-base font-bold">{row.title ?? t("untitled")}</span>
                       <span className="text-sm text-muted">
@@ -73,40 +75,25 @@ export default async function PublishPage({ searchParams }: Props) {
   }
 
   const items = await loadPostItems(ids);
-  const media = items.flatMap((item) => item.media);
-  const check = checkBatch(items.map((item) => ({ mediaCount: item.media.length })));
-  const problem =
-    items.length === 0
-      ? t("notFound")
-      : !check.ok
-        ? check.reason === "empty"
-          ? t("noFiles")
-          : t("tooMany", { total: check.total, max: MAX_POST_MEDIA })
-        : null;
+  const reviewItems: ReviewItem[] = items.map((item) => ({
+    id: item.record.id,
+    title: item.record.title,
+    artist: item.record.artist,
+    thumbnailUrl: item.media.find((file) => file.kind === "photo")?.url ?? null,
+    media: item.media,
+  }));
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 pt-3">
       {header}
-      {problem !== null || items.length === 0 ? (
-        <>
-          <p role="alert" className="text-base font-bold text-danger">
-            {problem}
-          </p>
-          <Link href="/admin/publish" className="flex h-14 items-center justify-center rounded-2xl border-2 border-ink text-base font-bold">
-            {t("chooseAgain")}
-          </Link>
-        </>
-      ) : (
-        <FacebookComposer
-          recordIds={items.map((item) => item.record.id)}
-          media={media}
-          initialText={
-            items.length === 1 && items[0] !== undefined
-              ? buildFacebookPost(items[0].record, { available: t("availableLabel"), sold: t("soldLabel") })
-              : ""
-          }
-        />
-      )}
+      <PublishReview
+        items={reviewItems}
+        initialText={
+          items.length === 1 && items[0] !== undefined
+            ? buildFacebookPost(items[0].record, { available: t("availableLabel"), sold: t("soldLabel") })
+            : ""
+        }
+      />
     </main>
   );
 }

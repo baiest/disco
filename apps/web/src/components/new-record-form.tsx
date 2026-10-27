@@ -21,7 +21,7 @@ import {
   saveRecordAction,
 } from "@/app/admin/records/new/actions";
 import { preparePhoto, sendToSignedUrl } from "@/lib/browser-media";
-import { addToBatch, loadBatch } from "@/lib/batch-storage";
+import { addToBatch, loadBatch, notifyBatchChanged } from "@/lib/batch-storage";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/draft-storage";
 import { mediaKindOfFile, videoContentType } from "@/lib/file-kind";
 import {
@@ -284,6 +284,7 @@ export function NewRecordForm({ apiKey }: { apiKey: string }) {
       return;
     }
     addToBatch(localStorage, recordIdRef.current);
+    notifyBatchChanged();
     setBatch(loadBatch(localStorage));
     const nextId = crypto.randomUUID();
     recordIdRef.current = nextId;

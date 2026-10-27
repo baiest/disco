@@ -3,8 +3,17 @@
 import type { RecordInput, RecordInputError, RecordInputField, RecordStatus } from "@disco/domain";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { changeStatusAction, saveFieldsAction, undoStatusAction } from "@/app/admin/records/[id]/actions";
+import {
+  changeStatusAction,
+  deleteRecordAction,
+  saveFieldsAction,
+  setPricePublicAction,
+  undoStatusAction,
+} from "@/app/admin/records/[id]/actions";
+import { BatchToggle } from "./batch-toggle";
+import { ConfirmDialog } from "./confirm-dialog";
 import { PriceInput, useFormatPrice } from "./price-input";
 
 const UNDO_SECONDS = 8;
@@ -18,6 +27,7 @@ const STATUS_ERRORS = [
   "invalid_id", "unauthenticated", "not_found", "invalid_status", "no_media", "same_status", "publish_first", "failed",
 ] as const;
 const SAVE_ERRORS = ["invalid_id", "unauthenticated", "failed"] as const;
+const DELETE_ERRORS = ["invalid_id", "unauthenticated", "not_found", "failed"] as const;
 const TARGETS: RecordStatus[] = ["available", "sold", "unavailable"];
 
 export interface MediaView {
@@ -32,13 +42,17 @@ interface Props {
   initialFields: RecordInput;
   soldOn: string | null;
   media: MediaView[];
+  /** The record was posted on Facebook, which the app cannot take down. */
+  postedOnFacebook: boolean;
+  /** Customers see this record's price in the public catalog. */
+  showPricePublic: boolean;
 }
 
 function known<T extends string>(list: readonly T[], value: string, fallback: T): T {
   return list.find((item) => item === value) ?? fallback;
 }
 
-export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, media }: Props) {
+export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, media, postedOnFacebook, showPricePublic }: Props) {
   const t = useTranslations("detail");
   const capture = useTranslations("capture");
   const [status, setStatus] = useState<RecordStatus>(initialStatus);
@@ -48,6 +62,11 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
   const [fields, setFields] = useState<RecordInput>(() => ({ ...initialFields, priceText: formatPrice(initialFields.priceText) }));
   const [errors, setErrors] = useState<Partial<Record<RecordInputField, RecordInputError>>>({});
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
+  const [priceIsPublic, setPriceIsPublic] = useState(showPricePublic);
+  const [pricePublicError, setPricePublicError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -93,6 +112,28 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
     setStatus(undo.previous);
     setMessage(t("undone", { status: t(`status.${undo.previous}`) }));
     setUndo(null);
+  }
+
+  async function changePricePublic(next: boolean) {
+    setPricePublicError(null);
+    setPriceIsPublic(next);
+    const result = await setPricePublicAction({ recordId, show: next });
+    if (!result.ok) {
+      setPriceIsPublic(!next);
+      setPricePublicError(t("pricePublicError"));
+    }
+  }
+
+  async function deleteRecord() {
+    setBusy(true);
+    setDeleteError(null);
+    const result = await deleteRecordAction(recordId);
+    if (result.ok) {
+      router.push(`/admin?undo=${recordId}`);
+      return;
+    }
+    setBusy(false);
+    setDeleteError(t(`deleteError.${known(DELETE_ERRORS, result.reason, "failed")}`));
   }
 
   async function save() {
@@ -166,12 +207,10 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
             ))
           )}
         </div>
-        {status === "available" && (
-          <Link
-            href={`/admin/publish?ids=${recordId}`}
-            className="flex h-14 items-center justify-center rounded-2xl bg-accent text-lg font-bold text-accent-ink"
-          >
-            {t("publishOnFacebook")}
+        {status === "available" && <BatchToggle recordId={recordId} />}
+        {(status === "available" || status === "sold") && (
+          <Link href={`/disco/${recordId}`} className="flex h-12 items-center text-base font-bold underline underline-offset-4">
+            {t("seePublic")}
           </Link>
         )}
         {undo !== null && (
@@ -235,6 +274,27 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
             )}
           </div>
         ))}
+        <div className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
+          <label className="flex items-center justify-between gap-3 text-base font-bold">
+            <span>{t("showPricePublic")}</span>
+            <input
+              type="checkbox"
+              role="switch"
+              checked={priceIsPublic}
+              disabled={fields.priceText.trim() === ""}
+              onChange={(event) => {
+                void changePricePublic(event.target.checked);
+              }}
+              className="size-7 shrink-0 accent-accent"
+            />
+          </label>
+          <p className="text-sm text-muted">{fields.priceText.trim() === "" ? t("showPriceNeedsPrice") : t("showPricePublicHint")}</p>
+          {pricePublicError !== null && (
+            <p role="alert" className="text-sm font-bold text-danger">
+              {pricePublicError}
+            </p>
+          )}
+        </div>
         <button type="submit" disabled={busy} className="h-14 rounded-2xl bg-accent text-lg font-bold text-accent-ink disabled:bg-disabled disabled:text-muted">
           {t("save")}
         </button>
@@ -244,6 +304,32 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
         <p role="status" className="text-base font-bold">
           {message}
         </p>
+      )}
+
+      <button
+        type="button"
+        onClick={() => {
+          setDeleteError(null);
+          setConfirmingDelete(true);
+        }}
+        className="h-14 rounded-2xl border-2 border-danger text-lg font-bold text-danger"
+      >
+        {t("deleteButton")}
+      </button>
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title={t("deleteTitle")}
+          body={t(postedOnFacebook ? "deleteBodyFacebook" : "deleteBody")}
+          confirmLabel={t("deleteConfirm")}
+          cancelLabel={t("deleteCancel")}
+          busy={busy}
+          error={deleteError}
+          onConfirm={() => void deleteRecord()}
+          onCancel={() => {
+            setConfirmingDelete(false);
+          }}
+        />
       )}
     </div>
   );

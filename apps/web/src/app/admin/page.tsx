@@ -3,15 +3,20 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccountMenu } from "@/components/account-menu";
 import { AlbumCard } from "@/components/album-card";
+import { BatchSummaryCard } from "@/components/batch-summary-card";
 import { BottomBar } from "@/components/bottom-bar";
+import { DeletedNotice } from "@/components/deleted-notice";
+import { EmptyResults } from "@/components/empty-results";
 import { buildAlbumCards, FILTERS, parseSearch } from "@/lib/inventory";
-import { countUnposted, searchInventory, signThumbnails } from "@/server/records-repo";
+import { parseIds } from "@/lib/facebook-post";
+import { countUnposted, isRecordDeleted, searchInventory, signThumbnails } from "@/server/records-repo";
 import { getCurrentUserId } from "@/server/supabase/current-user";
 
-type Props = { searchParams: Promise<{ q?: string | string[]; filter?: string | string[] }> };
+type Props = { searchParams: Promise<{ q?: string | string[]; filter?: string | string[]; undo?: string | string[] }> };
 
 export default async function AdminPage({ searchParams }: Props) {
-  const search = parseSearch(await searchParams);
+  const params = await searchParams;
+  const search = parseSearch(params);
   const [t, admin] = await Promise.all([getTranslations("inventory"), getTranslations("admin")]);
   if ((await getCurrentUserId()) === null) {
     // The proxy already redirects; this check keeps the page safe on its own.
@@ -19,7 +24,12 @@ export default async function AdminPage({ searchParams }: Props) {
   }
 
   const isPlainList = search.query === "" && search.filter === "all";
-  const [rows, unposted] = await Promise.all([searchInventory(search), isPlainList ? countUnposted() : 0]);
+  const undoId = parseIds(params.undo)[0];
+  const [rows, unposted, deleted] = await Promise.all([
+    searchInventory(search),
+    isPlainList ? countUnposted() : 0,
+    undoId === undefined ? false : isRecordDeleted(undoId),
+  ]);
   const cards = rows === null ? [] : buildAlbumCards(rows);
   const pictures = await signThumbnails(cards.flatMap((card) => (card.thumbnailPath === null ? [] : [card.thumbnailPath])));
 
@@ -29,6 +39,10 @@ export default async function AdminPage({ searchParams }: Props) {
         <h1 className="font-display text-3xl font-extrabold">{admin("title")}</h1>
         <AccountMenu />
       </header>
+
+      {undoId !== undefined && deleted && <DeletedNotice recordId={undoId} />}
+
+      <BatchSummaryCard />
 
       <form action="/admin" method="get" role="search" className="relative">
         <input type="hidden" name="filter" value={search.filter} />
@@ -93,6 +107,8 @@ export default async function AdminPage({ searchParams }: Props) {
         <p role="status" className="py-8 text-center text-lg text-muted">
           {t("empty")}
         </p>
+      ) : cards.length === 0 ? (
+        <EmptyResults query={search.query} filter={search.filter} />
       ) : (
         <p role="status" className="text-sm font-bold text-muted">
           {t("count", { count: cards.length })}
