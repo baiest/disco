@@ -9,7 +9,7 @@ import { createSupabaseServerClient } from "./supabase/server";
 /** The storage bucket keeps its first name even though it now holds videos too. */
 const BUCKET = "record-photos";
 
-const INVENTORY_LIMIT = 100;
+const INVENTORY_LIMIT = 50;
 
 const OK: RepoResult = { ok: true };
 
@@ -126,6 +126,19 @@ function isRecordRow(value: unknown): value is Record<string, unknown> & { id: s
   return typeof row["id"] === "string" && typeof row["status"] === "string" && STATUSES.includes(row["status"]);
 }
 
+type Client = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
+/** Links that work for an hour for storage paths, as a map from path to link. */
+async function signedUrlMap(supabase: Client, paths: string[]): Promise<Map<string, string>> {
+  if (paths.length === 0) {
+    return new Map();
+  }
+  const signed = await supabase.storage.from(BUCKET).createSignedUrls(paths, SIGNED_URL_SECONDS);
+  return new Map(
+    (signed.data ?? []).flatMap((entry) => (entry.path !== null && entry.signedUrl ? [[entry.path, entry.signedUrl] as const] : [])),
+  );
+}
+
 const text = (value: unknown): string | null => (typeof value === "string" ? value : null);
 
 function toDiscRecord(row: Record<string, unknown> & { id: string; status: RecordStatus }, mediaCount: number): DiscRecord {
@@ -216,11 +229,10 @@ export async function loadRecordDetail(recordId: string): Promise<RecordDetail |
       ? [{ id: row["id"], kind, path: row["storage_path"] }]
       : [];
   });
-  const signed = await supabase.storage.from(BUCKET).createSignedUrls(
+  const urls = await signedUrlMap(
+    supabase,
     items.map((item) => item.path),
-    SIGNED_URL_SECONDS,
   );
-  const urls = new Map((signed.data ?? []).flatMap((entry) => (entry.path !== null && entry.signedUrl ? [[entry.path, entry.signedUrl] as const] : [])));
   const media = items.flatMap((item) => {
     const url = urls.get(item.path);
     return url === undefined ? [] : [{ id: item.id, kind: item.kind, url }];
@@ -284,12 +296,9 @@ export async function loadPostItems(recordIds: string[]): Promise<PostItem[]> {
       ? [{ id: row["id"], recordId: row["record_id"], kind, path: row["storage_path"] }]
       : [];
   });
-  const signed = await supabase.storage.from(BUCKET).createSignedUrls(
+  const urls = await signedUrlMap(
+    supabase,
     files.map((file) => file.path),
-    SIGNED_URL_SECONDS,
-  );
-  const urls = new Map(
-    (signed.data ?? []).flatMap((entry) => (entry.path !== null && entry.signedUrl ? [[entry.path, entry.signedUrl] as const] : [])),
   );
   const byId = new Map(records.map((row) => [row.id, row]));
   return recordIds.flatMap((id): PostItem[] => {
@@ -303,4 +312,17 @@ export async function loadPostItems(recordIds: string[]): Promise<PostItem[]> {
     });
     return [{ record: toDiscRecord(row, media.length), media }];
   });
+}
+
+/** Pictures for the inventory cards: a link per storage path, in one call. */
+export async function signThumbnails(paths: string[]): Promise<Map<string, string>> {
+  return signedUrlMap(await createSupabaseServerClient(), [...new Set(paths)]);
+}
+
+/** How many available records have never been posted on Facebook (counts up to 200). */
+export async function countUnposted(): Promise<number> {
+  const supabase = await createSupabaseServerClient();
+  const result = await supabase.rpc("search_records", { p_query: "", p_filter: "not_on_facebook", p_limit: 200 });
+  const data: unknown = result.data;
+  return result.error === null && Array.isArray(data) ? data.length : 0;
 }

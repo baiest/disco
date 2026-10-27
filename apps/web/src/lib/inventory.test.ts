@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAlbumCards, isSearchRow, parseSearch, toRecord, type SearchRow } from "./inventory";
+import { buildAlbumCards, isImagePath, isSearchRow, parseSearch, toRecord, type SearchRow } from "./inventory";
 
 function row(overrides: Partial<SearchRow> = {}): SearchRow {
   return {
@@ -95,5 +95,31 @@ describe("buildAlbumCards", () => {
 
   it("returns nothing for no rows", () => {
     expect(buildAlbumCards([])).toEqual([]);
+  });
+});
+
+describe("isImagePath", () => {
+  it.each(["o/r/m.jpg", "o/r/m.JPEG", "o/r/m.png", "o/r/m.webp"])("accepts %s", (path) => {
+    expect(isImagePath(path)).toBe(true);
+  });
+
+  it.each(["o/r/m.mp4", "o/r/m.mov", "o/r/m.webm", "o/r/m", "o/r/m.jpg.exe", ""])("rejects %j", (path) => {
+    expect(isImagePath(path)).toBe(false);
+  });
+});
+
+describe("album thumbnails", () => {
+  it("uses the first image among the copies", () => {
+    const cards = buildAlbumCards([
+      row({ id: "a", first_media_path: "o/a/1.mp4" }),
+      row({ id: "b", first_media_path: "o/b/1.jpg" }),
+      row({ id: "c", first_media_path: "o/c/1.jpg" }),
+    ]);
+    expect(cards[0]?.thumbnailPath).toBe("o/b/1.jpg");
+  });
+
+  it("has no thumbnail when no copy starts with an image", () => {
+    expect(buildAlbumCards([row({ first_media_path: "o/a/1.mp4" })])[0]?.thumbnailPath).toBeNull();
+    expect(buildAlbumCards([row({ first_media_path: null })])[0]?.thumbnailPath).toBeNull();
   });
 });
