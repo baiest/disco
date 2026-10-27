@@ -1,0 +1,25 @@
+# Local Supabase stack (supabase CLI). Not validated in CI: it needs Docker.
+project_id = "disco"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+
+[db]
+port = 54322
+major_version = 17
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+# Nobody can sign up on their own: the owner invites the single admin user.
+enable_signup = false
+
+[auth.email]
+enable_signup = false
+enable_confirmations = true
+
+[storage]
+enabled = true
