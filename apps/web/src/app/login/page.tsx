@@ -15,7 +15,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <h1 className="text-3xl font-bold">{t("title")}</h1>
       <p className="text-lg">{t("intro")}</p>
       {isLinkError(error) && (
-        <p role="alert" className="text-lg text-red-700">
+        <p role="alert" className="text-lg text-danger">
           {t(`linkError.${error}`)}
         </p>
       )}

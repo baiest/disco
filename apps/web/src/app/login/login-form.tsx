@@ -23,17 +23,17 @@ export function LoginForm() {
         autoComplete="email"
         required
         placeholder={t("emailPlaceholder")}
-        className="h-14 rounded-xl border border-neutral-400 px-4 text-lg"
+        className="h-14 rounded-2xl border border-field bg-card px-4 text-lg"
       />
       <button
         type="submit"
         disabled={pending}
-        className="h-14 rounded-xl bg-black text-lg font-semibold text-white disabled:opacity-60"
+        className="h-14 rounded-2xl bg-ink text-lg font-semibold text-accent-ink disabled:opacity-60"
       >
         {t("submit")}
       </button>
       {state.status !== "idle" && (
-        <p role="status" className={state.status === "sent" ? "text-lg text-green-800" : "text-lg text-red-700"}>
+        <p role="status" className={state.status === "sent" ? "text-lg text-ok" : "text-lg text-danger"}>
           {t(`status.${state.status}`)}
         </p>
       )}

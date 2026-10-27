@@ -18,6 +18,66 @@
   "admin": {
     "title": "Tus discos",
     "signedInAs": "Entraste como {email}",
-    "signOut": "Salir"
+    "signOut": "Salir",
+    "addRecord": "Agregar disco"
+  },
+  "capture": {
+    "title": "Disco nuevo",
+    "mediaTitle": "Fotos y videos",
+    "mediaCount": "{count} de {max}",
+    "takePhoto": "Tomar foto",
+    "recordVideo": "Grabar video",
+    "chooseGallery": "Elegir de la galería",
+    "mediaHint": "Hasta {max} entre fotos y videos. Una foto basta para guardarlo.",
+    "removeMedia": "Quitar",
+    "retryMedia": "Reintentar",
+    "item": {
+      "preparing": "Preparando…",
+      "uploading": "Subiendo {percent}%",
+      "retrying": "Reintentando…",
+      "done": "Lista",
+      "video": "Video",
+      "photo": "Foto"
+    },
+    "failure": {
+      "unsupported_type": "Ese archivo no es una foto ni un video que podamos usar.",
+      "empty": "El archivo está vacío.",
+      "too_big": "Pesa demasiado. Prueba con uno más liviano.",
+      "too_long": "El video dura más de 2 minutos.",
+      "duration_unknown": "No pudimos leer cuánto dura el video.",
+      "too_many": "Ya tienes 8 fotos y videos. Quita uno para agregar otro.",
+      "too_many_videos": "Solo caben 2 videos por disco.",
+      "not_uploaded": "No terminó de subir. Toca Reintentar.",
+      "invalid_id": "Algo salió mal. Recarga la página.",
+      "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
+      "failed": "No se pudo subir. Toca Reintentar."
+    },
+    "fields": {
+      "title": "Álbum",
+      "titlePlaceholder": "Nombre del disco",
+      "artist": "Artista",
+      "artistPlaceholder": "Quién lo canta",
+      "notes": "Texto o notas",
+      "notesPlaceholder": "Por ejemplo: LP original americano",
+      "price": "Precio (opcional)",
+      "pricePlaceholder": "80.000 o 80 mil"
+    },
+    "fieldError": {
+      "too_long": "Es demasiado largo.",
+      "invalid_price": "No entendí el precio. Prueba con 80.000 o 80 mil."
+    },
+    "optionalHint": "Todo es opcional, también el precio.",
+    "saveAndNext": "Guardar y seguir con otro disco",
+    "saveDraftAndExit": "Guardar como borrador y salir",
+    "waitUploads": "Espera a que terminen de subir las fotos.",
+    "needMedia": "Agrega una foto o un video para guardarlo.",
+    "saveError": {
+      "save_failed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.",
+      "no_media": "Agrega una foto o un video para guardarlo.",
+      "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
+      "invalid_id": "Algo salió mal. Recarga la página."
+    },
+    "saved": "Guardado. Puedes seguir con otro disco.",
+    "restored": "Recuperamos lo que habías escrito."
   }
 }

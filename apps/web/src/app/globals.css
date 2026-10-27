@@ -1,1 +1,32 @@
 @import "tailwindcss";
+
+/*
+ * The palette and fonts live here and nowhere else. To change the look, edit these
+ * values; screens use the names (bg-paper, text-ink, bg-accent...), never raw colors.
+ */
+@theme {
+  --color-paper: #f4efe6;
+  --color-card: #fffdf9;
+  --color-ink: #1c1917;
+  --color-muted: #5b544c;
+  --color-line: #e3dbcd;
+  --color-field: #8a8178;
+  --color-accent: #b8420f;
+  --color-accent-ink: #ffffff;
+  --color-accent-soft: #fbe9dc;
+  --color-ok: #14532d;
+  --color-ok-soft: #ddebdd;
+  --color-warn: #5c3d00;
+  --color-warn-soft: #f8e3b0;
+  --color-danger: #7f1d1d;
+  --color-disabled: #e3dbcd;
+
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
