@@ -29,9 +29,8 @@ checks.
 
 1. Settings > Code security: enable secret scanning and push protection.
 2. Settings > Rules > Rulesets > New ruleset > Import a ruleset, and choose
-   `.github/rulesets/main.json`. It requires pull requests, squash merges,
-   linear history and the four CI checks, and blocks force pushes and
-   deletion. There are no bypass actors, so it also applies to admins.
+   `.github/rulesets/main.json`. It requires pull requests, merge commits
+   (no squash) and the four CI checks, and blocks force pushes and deletion. There are no bypass actors, so it also applies to admins.
 
 ## License
 
