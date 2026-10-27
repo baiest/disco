@@ -20,7 +20,7 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
   if (detail === null) {
     notFound();
   }
-  const { record, media } = detail;
+  const { record, media, showPricePublic } = detail;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 pt-3">
@@ -42,6 +42,7 @@ export default async function RecordPage({ params }: { params: Promise<{ id: str
         soldOn={record.soldAt === null ? null : format.dateTime(new Date(record.soldAt), { day: "numeric", month: "short" })}
         media={media}
         postedOnFacebook={record.facebookPostedAt !== null}
+        showPricePublic={showPricePublic}
       />
     </main>
   );

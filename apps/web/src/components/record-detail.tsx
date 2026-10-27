@@ -5,7 +5,13 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { changeStatusAction, deleteRecordAction, saveFieldsAction, undoStatusAction } from "@/app/admin/records/[id]/actions";
+import {
+  changeStatusAction,
+  deleteRecordAction,
+  saveFieldsAction,
+  setPricePublicAction,
+  undoStatusAction,
+} from "@/app/admin/records/[id]/actions";
 import { ConfirmDialog } from "./confirm-dialog";
 import { PriceInput, useFormatPrice } from "./price-input";
 
@@ -37,13 +43,15 @@ interface Props {
   media: MediaView[];
   /** The record was posted on Facebook, which the app cannot take down. */
   postedOnFacebook: boolean;
+  /** Customers see this record's price in the public catalog. */
+  showPricePublic: boolean;
 }
 
 function known<T extends string>(list: readonly T[], value: string, fallback: T): T {
   return list.find((item) => item === value) ?? fallback;
 }
 
-export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, media, postedOnFacebook }: Props) {
+export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, media, postedOnFacebook, showPricePublic }: Props) {
   const t = useTranslations("detail");
   const capture = useTranslations("capture");
   const [status, setStatus] = useState<RecordStatus>(initialStatus);
@@ -54,6 +62,8 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
   const [errors, setErrors] = useState<Partial<Record<RecordInputField, RecordInputError>>>({});
   const [busy, setBusy] = useState(false);
   const router = useRouter();
+  const [priceIsPublic, setPriceIsPublic] = useState(showPricePublic);
+  const [pricePublicError, setPricePublicError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -101,6 +111,16 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
     setStatus(undo.previous);
     setMessage(t("undone", { status: t(`status.${undo.previous}`) }));
     setUndo(null);
+  }
+
+  async function changePricePublic(next: boolean) {
+    setPricePublicError(null);
+    setPriceIsPublic(next);
+    const result = await setPricePublicAction({ recordId, show: next });
+    if (!result.ok) {
+      setPriceIsPublic(!next);
+      setPricePublicError(t("pricePublicError"));
+    }
   }
 
   async function deleteRecord() {
@@ -194,6 +214,11 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
             {t("publishOnFacebook")}
           </Link>
         )}
+        {(status === "available" || status === "sold") && (
+          <Link href={`/disco/${recordId}`} className="flex h-12 items-center text-base font-bold underline underline-offset-4">
+            {t("seePublic")}
+          </Link>
+        )}
         {undo !== null && (
           <div role="status" className="flex items-center justify-between gap-3 rounded-2xl bg-ink px-4 py-3 text-accent-ink">
             <span className="text-base font-bold">{t("changed", { status: t(`status.${undo.next}`) })}</span>
@@ -255,6 +280,27 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
             )}
           </div>
         ))}
+        <div className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
+          <label className="flex items-center justify-between gap-3 text-base font-bold">
+            <span>{t("showPricePublic")}</span>
+            <input
+              type="checkbox"
+              role="switch"
+              checked={priceIsPublic}
+              disabled={fields.priceText.trim() === ""}
+              onChange={(event) => {
+                void changePricePublic(event.target.checked);
+              }}
+              className="size-7 shrink-0 accent-accent"
+            />
+          </label>
+          <p className="text-sm text-muted">{fields.priceText.trim() === "" ? t("showPriceNeedsPrice") : t("showPricePublicHint")}</p>
+          {pricePublicError !== null && (
+            <p role="alert" className="text-sm font-bold text-danger">
+              {pricePublicError}
+            </p>
+          )}
+        </div>
         <button type="submit" disabled={busy} className="h-14 rounded-2xl bg-accent text-lg font-bold text-accent-ink disabled:bg-disabled disabled:text-muted">
           {t("save")}
         </button>

@@ -136,7 +136,7 @@ export async function searchInventory(search: Search): Promise<SearchRow[] | nul
 }
 
 const RECORD_COLUMNS =
-  "id, title, artist, price_cop, status, notes, updated_at, sold_at, facebook_posted_at, facebook_needs_update";
+  "id, title, artist, price_cop, status, notes, updated_at, sold_at, facebook_posted_at, facebook_needs_update, show_price_public";
 const STATUSES: readonly string[] = ["draft", "available", "sold", "unavailable"];
 const SIGNED_URL_SECONDS = 60 * 60;
 
@@ -215,6 +215,10 @@ export async function createDetailRepo(): Promise<DetailRepo> {
       }
       return Array.isArray(data) && data.length > 0 ? OK : { ok: false, reason: "other" };
     },
+    async setShowPricePublic(recordId, show) {
+      const { data, error } = await supabase.from("records").update({ show_price_public: show }).eq("id", recordId).select("id");
+      return error === null && Array.isArray(data) && data.length > 0 ? OK : { ok: false, reason: "other" };
+    },
     async setDeleted(recordId, deleted) {
       const { data, error } = await supabase
         .from("records")
@@ -242,6 +246,8 @@ export interface MediaView {
 export interface RecordDetail {
   record: DiscRecord;
   media: MediaView[];
+  /** Customers see this record's price in the public catalog. */
+  showPricePublic: boolean;
 }
 
 /** A record with its photos and videos, as links that work for an hour. Null when it does not exist. */
@@ -282,7 +288,7 @@ export async function loadRecordDetail(recordId: string): Promise<RecordDetail |
     const url = urls.get(item.path);
     return url === undefined ? [] : [{ id: item.id, kind: item.kind, url }];
   });
-  return { record: toDiscRecord(row, list.length), media };
+  return { record: toDiscRecord(row, list.length), media, showPricePublic: row["show_price_public"] === true };
 }
 
 export interface RestoredMedia {

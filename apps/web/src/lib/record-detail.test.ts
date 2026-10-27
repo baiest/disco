@@ -4,6 +4,7 @@ import {
   changeRecordStatus,
   removeRecord,
   restoreRecord,
+  setPricePublic,
   undoRecordStatus,
   updateRecordFields,
   type DetailRepo,
@@ -36,6 +37,7 @@ function fakeRepo(overrides: Partial<DetailRepo> = {}): DetailRepo {
     updateFields: vi.fn().mockResolvedValue({ ok: true }),
     setStatus: vi.fn().mockResolvedValue({ ok: true }),
     setDeleted: vi.fn().mockResolvedValue({ ok: true }),
+    setShowPricePublic: vi.fn().mockResolvedValue({ ok: true }),
     ...overrides,
   };
 }
@@ -178,6 +180,36 @@ describe("restoreRecord", () => {
   it("reports a database failure, also when nothing was there to restore", async () => {
     const repo = fakeRepo({ setDeleted: vi.fn().mockResolvedValue({ ok: false, reason: "other" }) });
     expect(await restoreRecord(repo, { recordId: ID })).toEqual({ ok: false, reason: "failed" });
+  });
+});
+
+describe("setPricePublic", () => {
+  it("turns the public price on and off for a record", async () => {
+    const repo = fakeRepo();
+    expect(await setPricePublic(repo, { recordId: ID, show: true })).toEqual({ ok: true });
+    expect(repo.setShowPricePublic).toHaveBeenCalledWith(ID, true);
+    expect(await setPricePublic(repo, { recordId: ID, show: false })).toEqual({ ok: true });
+    expect(repo.setShowPricePublic).toHaveBeenLastCalledWith(ID, false);
+  });
+
+  it("only takes a real yes or no", async () => {
+    const repo = fakeRepo();
+    expect(await setPricePublic(repo, { recordId: ID, show: "yes" as unknown as boolean })).toEqual({ ok: false, reason: "invalid_value" });
+    expect(repo.setShowPricePublic).not.toHaveBeenCalled();
+  });
+
+  it("refuses a bad id or no session without touching anything", async () => {
+    const repo = fakeRepo();
+    expect(await setPricePublic(repo, { recordId: "nope", show: true })).toEqual({ ok: false, reason: "invalid_id" });
+    const signedOut = fakeRepo({ currentUserId: vi.fn().mockResolvedValue(null) });
+    expect(await setPricePublic(signedOut, { recordId: ID, show: true })).toEqual({ ok: false, reason: "unauthenticated" });
+    expect(repo.setShowPricePublic).not.toHaveBeenCalled();
+    expect(signedOut.setShowPricePublic).not.toHaveBeenCalled();
+  });
+
+  it("reports a database failure", async () => {
+    const repo = fakeRepo({ setShowPricePublic: vi.fn().mockResolvedValue({ ok: false, reason: "other" }) });
+    expect(await setPricePublic(repo, { recordId: ID, show: true })).toEqual({ ok: false, reason: "failed" });
   });
 });
 

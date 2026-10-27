@@ -5,10 +5,12 @@ import { revalidatePath } from "next/cache";
 import {
   changeRecordStatus,
   removeRecord,
+  setPricePublic,
   undoRecordStatus,
   updateRecordFields,
   type ChangeStatusOutcome,
   type DeleteOutcome,
+  type PricePublicOutcome,
   type UndoOutcome,
   type UpdateFieldsOutcome,
 } from "@/lib/record-detail";
@@ -48,6 +50,17 @@ export async function deleteRecordAction(recordId: string): Promise<DeleteOutcom
   try {
     const result = await removeRecord(await createDetailRepo(), { recordId });
     revalidatePath("/admin");
+    return result;
+  } catch {
+    return { ok: false, reason: "failed" };
+  }
+}
+
+export async function setPricePublicAction(request: { recordId: string; show: boolean }): Promise<PricePublicOutcome> {
+  try {
+    const result = await setPricePublic(await createDetailRepo(), request);
+    revalidatePath("/");
+    revalidatePath(`/disco/${request.recordId}`);
     return result;
   } catch {
     return { ok: false, reason: "failed" };
