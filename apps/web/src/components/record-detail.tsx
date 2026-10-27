@@ -3,8 +3,10 @@
 import type { RecordInput, RecordInputError, RecordInputField, RecordStatus } from "@disco/domain";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { changeStatusAction, saveFieldsAction, undoStatusAction } from "@/app/admin/records/[id]/actions";
+import { changeStatusAction, deleteRecordAction, saveFieldsAction, undoStatusAction } from "@/app/admin/records/[id]/actions";
+import { ConfirmDialog } from "./confirm-dialog";
 import { PriceInput, useFormatPrice } from "./price-input";
 
 const UNDO_SECONDS = 8;
@@ -18,6 +20,7 @@ const STATUS_ERRORS = [
   "invalid_id", "unauthenticated", "not_found", "invalid_status", "no_media", "same_status", "publish_first", "failed",
 ] as const;
 const SAVE_ERRORS = ["invalid_id", "unauthenticated", "failed"] as const;
+const DELETE_ERRORS = ["invalid_id", "unauthenticated", "not_found", "failed"] as const;
 const TARGETS: RecordStatus[] = ["available", "sold", "unavailable"];
 
 export interface MediaView {
@@ -32,13 +35,15 @@ interface Props {
   initialFields: RecordInput;
   soldOn: string | null;
   media: MediaView[];
+  /** The record was posted on Facebook, which the app cannot take down. */
+  postedOnFacebook: boolean;
 }
 
 function known<T extends string>(list: readonly T[], value: string, fallback: T): T {
   return list.find((item) => item === value) ?? fallback;
 }
 
-export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, media }: Props) {
+export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, media, postedOnFacebook }: Props) {
   const t = useTranslations("detail");
   const capture = useTranslations("capture");
   const [status, setStatus] = useState<RecordStatus>(initialStatus);
@@ -48,6 +53,9 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
   const [fields, setFields] = useState<RecordInput>(() => ({ ...initialFields, priceText: formatPrice(initialFields.priceText) }));
   const [errors, setErrors] = useState<Partial<Record<RecordInputField, RecordInputError>>>({});
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -93,6 +101,18 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
     setStatus(undo.previous);
     setMessage(t("undone", { status: t(`status.${undo.previous}`) }));
     setUndo(null);
+  }
+
+  async function deleteRecord() {
+    setBusy(true);
+    setDeleteError(null);
+    const result = await deleteRecordAction(recordId);
+    if (result.ok) {
+      router.push(`/admin?undo=${recordId}`);
+      return;
+    }
+    setBusy(false);
+    setDeleteError(t(`deleteError.${known(DELETE_ERRORS, result.reason, "failed")}`));
   }
 
   async function save() {
@@ -244,6 +264,32 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
         <p role="status" className="text-base font-bold">
           {message}
         </p>
+      )}
+
+      <button
+        type="button"
+        onClick={() => {
+          setDeleteError(null);
+          setConfirmingDelete(true);
+        }}
+        className="h-14 rounded-2xl border-2 border-danger text-lg font-bold text-danger"
+      >
+        {t("deleteButton")}
+      </button>
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title={t("deleteTitle")}
+          body={t(postedOnFacebook ? "deleteBodyFacebook" : "deleteBody")}
+          confirmLabel={t("deleteConfirm")}
+          cancelLabel={t("deleteCancel")}
+          busy={busy}
+          error={deleteError}
+          onConfirm={() => void deleteRecord()}
+          onCancel={() => {
+            setConfirmingDelete(false);
+          }}
+        />
       )}
     </div>
   );

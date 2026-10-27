@@ -16,6 +16,8 @@ export interface DetailRepo {
   getRecord: (recordId: string) => Promise<DiscRecord | null>;
   updateFields: (recordId: string, values: RecordValues) => Promise<RepoResult>;
   setStatus: (recordId: string, status: RecordStatus) => Promise<RepoResult>;
+  /** Marks the record as deleted (or brings it back). Nothing is ever erased from the database. */
+  setDeleted: (recordId: string, deleted: boolean) => Promise<RepoResult>;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -105,3 +107,31 @@ export async function updateRecordFields(
   const saved = await repo.updateFields(request.recordId, checked.value);
   return saved.ok ? { ok: true } : { ok: false, reason: "failed" };
 }
+
+export type DeleteOutcome = { ok: true } | { ok: false; reason: Guard | "not_found" | "failed" };
+
+/** Deletes a record the way the owner sees it: it disappears from every list but can be brought back. */
+export async function removeRecord(repo: DetailRepo, request: { recordId: string }): Promise<DeleteOutcome> {
+  const blocked = await guard(repo, request.recordId);
+  if (blocked !== null) {
+    return { ok: false, reason: blocked };
+  }
+  if ((await repo.getRecord(request.recordId)) === null) {
+    return { ok: false, reason: "not_found" };
+  }
+  const saved = await repo.setDeleted(request.recordId, true);
+  return saved.ok ? { ok: true } : { ok: false, reason: "failed" };
+}
+
+export type RestoreOutcome = { ok: true } | { ok: false; reason: Guard | "failed" };
+
+/** Undoes a delete. */
+export async function restoreRecord(repo: DetailRepo, request: { recordId: string }): Promise<RestoreOutcome> {
+  const blocked = await guard(repo, request.recordId);
+  if (blocked !== null) {
+    return { ok: false, reason: blocked };
+  }
+  const saved = await repo.setDeleted(request.recordId, false);
+  return saved.ok ? { ok: true } : { ok: false, reason: "failed" };
+}
+

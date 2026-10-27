@@ -215,7 +215,22 @@ export async function createDetailRepo(): Promise<DetailRepo> {
       }
       return Array.isArray(data) && data.length > 0 ? OK : { ok: false, reason: "other" };
     },
+    async setDeleted(recordId, deleted) {
+      const { data, error } = await supabase
+        .from("records")
+        .update({ deleted_at: deleted ? new Date().toISOString() : null })
+        .eq("id", recordId)
+        .select("id");
+      return error === null && Array.isArray(data) && data.length > 0 ? OK : { ok: false, reason: "other" };
+    },
   };
+}
+
+/** True when the record exists and is deleted: the home screen only offers to bring it back then. */
+export async function isRecordDeleted(recordId: string): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const found = await supabase.from("records").select("id").eq("id", recordId).not("deleted_at", "is", null).maybeSingle();
+  return found.error === null && found.data !== null;
 }
 
 export interface MediaView {
