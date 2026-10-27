@@ -2,6 +2,7 @@ import { buildFacebookPost } from "@disco/domain";
 import { getFormatter, getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { BottomBar } from "@/components/bottom-bar";
 import { FacebookComposer } from "@/components/facebook-composer";
 import { checkBatch, MAX_POST_MEDIA, parseIds } from "@/lib/facebook-post";
 import { loadPostItems, searchInventory } from "@/server/records-repo";
@@ -60,11 +61,11 @@ export default async function PublishPage({ searchParams }: Props) {
                 </li>
               ))}
             </ul>
-            <div className="fixed inset-x-0 bottom-0 border-t border-line bg-paper px-4 pb-5 pt-3">
+            <BottomBar>
               <button type="submit" className="h-14 w-full rounded-2xl bg-accent text-lg font-bold text-accent-ink">
                 {t("prepare")}
               </button>
-            </div>
+            </BottomBar>
           </form>
         )}
       </main>

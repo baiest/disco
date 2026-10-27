@@ -77,3 +77,33 @@ describe("slotsOf and uploadsInProgress", () => {
     expect(uploadsInProgress([])).toBe(false);
   });
 });
+
+describe("restoring uploaded media", () => {
+  it("shows the files that were already uploaded, in their order, as done", () => {
+    const state = mediaItemsReducer(initialItems, {
+      type: "restore",
+      items: [
+        { id: "a", kind: "photo", previewUrl: "https://s/a", position: 0 },
+        { id: "b", kind: "video", previewUrl: "https://s/b", position: 2 },
+      ],
+    });
+    expect(state).toEqual([
+      { id: "a", kind: "photo", status: "done", progress: 100, previewUrl: "https://s/a", position: 0 },
+      { id: "b", kind: "video", status: "done", progress: 100, previewUrl: "https://s/b", position: 2 },
+    ]);
+  });
+
+  it("keeps what is already on screen and never shows a file twice", () => {
+    const current = [item("a", { status: "done", position: 0, previewUrl: "blob:local" }), item("c", { status: "uploading" })];
+    const state = mediaItemsReducer(current, {
+      type: "restore",
+      items: [
+        { id: "a", kind: "photo", previewUrl: "https://s/a", position: 0 },
+        { id: "b", kind: "photo", previewUrl: "https://s/b", position: 1 },
+      ],
+    });
+    expect(state.map((i) => i.id)).toEqual(["b", "a", "c"]);
+    expect(state.find((i) => i.id === "a")?.previewUrl).toBe("blob:local");
+  });
+});
+

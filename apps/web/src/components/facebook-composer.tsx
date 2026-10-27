@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { markPostedAction } from "@/app/admin/publish/actions";
 import { clearBatch } from "@/lib/batch-storage";
 import { copyText, fetchFiles, shareFiles, type MediaLink } from "@/lib/share-media";
+import { BottomBar } from "./bottom-bar";
 
 const DONE_ERRORS = ["invalid_ids", "unauthenticated", "failed"] as const;
 
@@ -45,9 +46,11 @@ export function FacebookComposer({ recordIds, media, initialText }: Props) {
     if (files.state !== "ready") {
       return;
     }
-    const outcome = await shareFiles(navigator, files.files);
+    // Copy first: once the share sheet is open this page loses the right to use the clipboard.
+    const copied = text.trim() !== "" && (await copyText(navigator, text));
+    const outcome = await shareFiles(navigator, files.files, text.trim());
     if (outcome === "shared") {
-      setMessage(t("sharedHint"));
+      setMessage(t(copied ? "sharedPasteHint" : "sharedHint"));
     } else if (outcome === "unsupported") {
       setShowSave(true);
       setMessage(t("unsupported"));
@@ -149,7 +152,7 @@ export function FacebookComposer({ recordIds, media, initialText }: Props) {
 
       <p className="rounded-2xl bg-line px-4 py-3 text-sm leading-snug text-muted">{t("note")}</p>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-line bg-paper px-4 pb-5 pt-3">
+      <BottomBar>
         <button
           type="button"
           disabled={busy}
@@ -158,7 +161,7 @@ export function FacebookComposer({ recordIds, media, initialText }: Props) {
         >
           {t("done")}
         </button>
-      </div>
+      </BottomBar>
     </div>
   );
 }

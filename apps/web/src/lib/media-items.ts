@@ -24,7 +24,16 @@ export type MediaItemsAction =
   | { type: "failed"; id: string; reason: string }
   | { type: "retrying"; id: string; attempt: number }
   | { type: "remove"; id: string }
+  | { type: "restore"; items: RestoredItem[] }
   | { type: "reset" };
+
+/** A file that was uploaded in an earlier visit, read back from the server. */
+export interface RestoredItem {
+  id: string;
+  kind: MediaKind;
+  previewUrl: string;
+  position: number;
+}
 
 export const initialItems: MediaItem[] = [];
 
@@ -65,6 +74,14 @@ export function mediaItemsReducer(items: readonly MediaItem[], action: MediaItem
       return update(items, action.id, (item) => ({ ...item, status: "uploading", attempt: action.attempt }));
     case "remove":
       return items.filter((item) => item.id !== action.id);
+    case "restore": {
+      const known = new Set(items.map((item) => item.id));
+      const restored = action.items
+        .filter((entry) => !known.has(entry.id))
+        .sort((a, b) => a.position - b.position)
+        .map((entry): MediaItem => ({ ...entry, status: "done", progress: 100 }));
+      return [...restored, ...items];
+    }
     case "reset":
       return [];
   }

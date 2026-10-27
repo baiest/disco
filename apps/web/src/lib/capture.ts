@@ -30,7 +30,11 @@ export interface CaptureRepo {
     durationSeconds: number | null;
   }) => Promise<RepoResult>;
   setStatus: (recordId: string, status: "available") => Promise<RepoResult>;
+  /** Removes a file from the record: its row first (the database may refuse), then the stored file. */
+  deleteMedia: (recordId: string, mediaId: string) => Promise<DeleteMediaResult>;
 }
+
+export type DeleteMediaResult = { ok: true } | { ok: false; reason: "not_found" | "last_media" | "other" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -185,4 +189,26 @@ export async function registerMedia(repo: CaptureRepo, request: MediaRequest): P
     return { ok: true, position: prepared.position };
   }
   return { ok: false, reason: inserted.reason === "limit" ? "too_many" : "failed" };
+}
+
+export type RemoveMediaResult =
+  | { ok: true }
+  | { ok: false; reason: "invalid_id" | "unauthenticated" | "not_found" | "last_media" | "failed" };
+
+/** Takes a photo or video off a record, for when the owner taps the X on one that already uploaded. */
+export async function removeMedia(
+  repo: CaptureRepo,
+  request: { recordId: string; mediaId: string },
+): Promise<RemoveMediaResult> {
+  if (!UUID.test(request.recordId) || !UUID.test(request.mediaId)) {
+    return { ok: false, reason: "invalid_id" };
+  }
+  if ((await repo.currentUserId()) === null) {
+    return { ok: false, reason: "unauthenticated" };
+  }
+  const removed = await repo.deleteMedia(request.recordId, request.mediaId);
+  if (removed.ok) {
+    return { ok: true };
+  }
+  return { ok: false, reason: removed.reason === "other" ? "failed" : removed.reason };
 }

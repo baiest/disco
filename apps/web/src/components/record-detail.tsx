@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { changeStatusAction, saveFieldsAction, undoStatusAction } from "@/app/admin/records/[id]/actions";
+import { PriceInput, useFormatPrice } from "./price-input";
 
 const UNDO_SECONDS = 8;
 const FIELDS = [
@@ -43,7 +44,8 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
   const [status, setStatus] = useState<RecordStatus>(initialStatus);
   const [undo, setUndo] = useState<{ previous: RecordStatus; next: RecordStatus } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [fields, setFields] = useState<RecordInput>(initialFields);
+  const formatPrice = useFormatPrice();
+  const [fields, setFields] = useState<RecordInput>(() => ({ ...initialFields, priceText: formatPrice(initialFields.priceText) }));
   const [errors, setErrors] = useState<Partial<Record<RecordInputField, RecordInputError>>>({});
   const [busy, setBusy] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -205,11 +207,19 @@ export function RecordDetail({ recordId, initialStatus, initialFields, soldOn, m
                 }}
                 className="rounded-2xl border-2 border-field bg-card px-4 py-3 text-lg"
               />
+            ) : name === "priceText" ? (
+              <PriceInput
+                id={name}
+                value={fields[name]}
+                placeholder={capture(`fields.${placeholder}`)}
+                onChange={(value) => {
+                  setFields({ ...fields, [name]: value });
+                }}
+              />
             ) : (
               <input
                 id={name}
                 type="text"
-                inputMode={name === "priceText" ? "numeric" : "text"}
                 value={fields[name]}
                 placeholder={capture(`fields.${placeholder}`)}
                 onChange={(event) => {

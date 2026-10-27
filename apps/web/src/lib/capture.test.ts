@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { registerMedia, requestUpload, saveRecord, type CaptureRepo } from "./capture";
+import { registerMedia, removeMedia, requestUpload, saveRecord, type CaptureRepo } from "./capture";
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const RECORD = "22222222-2222-4222-8222-222222222222";
@@ -14,6 +14,7 @@ function fakeRepo(overrides: Partial<CaptureRepo> = {}): CaptureRepo & { [K in k
     mediaExists: vi.fn().mockResolvedValue(true),
     insertMedia: vi.fn().mockResolvedValue({ ok: true }),
     setStatus: vi.fn().mockResolvedValue({ ok: true }),
+    deleteMedia: vi.fn().mockResolvedValue({ ok: true }),
     ...overrides,
   } as never;
 }
@@ -188,5 +189,38 @@ describe("registerMedia", () => {
     expect(await registerMedia(repo, photoRequest)).toEqual({ ok: false, reason: "failed" });
     const limit = fakeRepo({ insertMedia: vi.fn().mockResolvedValue({ ok: false, reason: "limit" }) });
     expect(await registerMedia(limit, photoRequest)).toEqual({ ok: false, reason: "too_many" });
+  });
+});
+
+describe("removeMedia", () => {
+  it("deletes the file of the record", async () => {
+    const repo = fakeRepo();
+    expect(await removeMedia(repo, { recordId: RECORD, mediaId: MEDIA })).toEqual({ ok: true });
+    expect(repo.deleteMedia).toHaveBeenCalledWith(RECORD, MEDIA);
+  });
+
+  it("refuses bad ids and no session without touching anything", async () => {
+    const repo = fakeRepo();
+    expect(await removeMedia(repo, { recordId: "nope", mediaId: MEDIA })).toEqual({ ok: false, reason: "invalid_id" });
+    expect(await removeMedia(repo, { recordId: RECORD, mediaId: "nope" })).toEqual({ ok: false, reason: "invalid_id" });
+    const signedOut = fakeRepo({ currentUserId: vi.fn().mockResolvedValue(null) });
+    expect(await removeMedia(signedOut, { recordId: RECORD, mediaId: MEDIA })).toEqual({ ok: false, reason: "unauthenticated" });
+    expect(repo.deleteMedia).not.toHaveBeenCalled();
+    expect(signedOut.deleteMedia).not.toHaveBeenCalled();
+  });
+
+  it("says when the file is not there any more", async () => {
+    const repo = fakeRepo({ deleteMedia: vi.fn().mockResolvedValue({ ok: false, reason: "not_found" }) });
+    expect(await removeMedia(repo, { recordId: RECORD, mediaId: MEDIA })).toEqual({ ok: false, reason: "not_found" });
+  });
+
+  it("explains that a published record keeps its last file", async () => {
+    const repo = fakeRepo({ deleteMedia: vi.fn().mockResolvedValue({ ok: false, reason: "last_media" }) });
+    expect(await removeMedia(repo, { recordId: RECORD, mediaId: MEDIA })).toEqual({ ok: false, reason: "last_media" });
+  });
+
+  it("reports any other failure as failed", async () => {
+    const repo = fakeRepo({ deleteMedia: vi.fn().mockResolvedValue({ ok: false, reason: "other" }) });
+    expect(await removeMedia(repo, { recordId: RECORD, mediaId: MEDIA })).toEqual({ ok: false, reason: "failed" });
   });
 });
