@@ -2,9 +2,10 @@
 
 import { useTranslations } from "next-intl";
 import { useActionState } from "react";
-import { sendLoginLink, type LoginFormState } from "./actions";
+import { sendLoginLink, signInWithPasswordAction, type LoginFormState, type PasswordFormState } from "./actions";
 
 const initialState: LoginFormState = { status: "idle" };
+const initialPasswordState: PasswordFormState = { status: "idle" };
 
 export function LoginForm() {
   const t = useTranslations("login");
@@ -35,6 +36,52 @@ export function LoginForm() {
       {state.status !== "idle" && (
         <p role="status" className={state.status === "sent" ? "text-lg text-ok" : "text-lg text-danger"}>
           {t(`status.${state.status}`)}
+        </p>
+      )}
+    </form>
+  );
+}
+
+export function PasswordForm() {
+  const t = useTranslations("login");
+  const [state, formAction, pending] = useActionState(signInWithPasswordAction, initialPasswordState);
+
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <label htmlFor="password-email" className="text-lg font-medium">
+        {t("emailLabel")}
+      </label>
+      <input
+        id="password-email"
+        name="email"
+        type="email"
+        inputMode="email"
+        autoComplete="username"
+        required
+        placeholder={t("emailPlaceholder")}
+        className="h-14 rounded-2xl border border-field bg-card px-4 text-lg"
+      />
+      <label htmlFor="password" className="text-lg font-medium">
+        {t("passwordLabel")}
+      </label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        autoComplete="current-password"
+        required
+        className="h-14 rounded-2xl border border-field bg-card px-4 text-lg"
+      />
+      <button
+        type="submit"
+        disabled={pending}
+        className="h-14 rounded-2xl bg-ink text-lg font-semibold text-accent-ink disabled:opacity-60"
+      >
+        {t("passwordSubmit")}
+      </button>
+      {state.status !== "idle" && (
+        <p role="alert" className="text-lg text-danger">
+          {t(`passwordStatus.${state.status}`)}
         </p>
       )}
     </form>
