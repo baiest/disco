@@ -74,7 +74,7 @@ export async function insertRecord(
   await session.asAdmin();
   await session.query("insert into public.records (id, owner_id) values ($1, $2)", [id, ownerId]);
   for (let position = 0; position < (fields.photos ?? 0); position += 1) {
-    await insertPhoto(session, ownerId, id, position);
+    await insertMedia(session, ownerId, id, position);
   }
   if (fields.status !== undefined && fields.status !== "draft") {
     await session.query("update public.records set status = $2 where id = $1", [id, fields.status]);
@@ -85,16 +85,19 @@ export async function insertRecord(
   return id;
 }
 
-export async function insertPhoto(
+export async function insertMedia(
   session: Session,
   ownerId: string,
   recordId: string,
   position: number,
+  kind: "photo" | "video" = "photo",
 ): Promise<string> {
   const id = randomUUID();
+  const extension = kind === "photo" ? "jpg" : "mp4";
+  const duration = kind === "video" ? 30 : null;
   await session.query(
-    "insert into public.record_photos (id, record_id, owner_id, storage_path, position) values ($1, $2, $3, $4, $5)",
-    [id, recordId, ownerId, `${ownerId}/${recordId}/${id}.jpg`, position],
+    "insert into public.record_media (id, record_id, owner_id, storage_path, position, kind, duration_seconds) values ($1, $2, $3, $4, $5, $6, $7)",
+    [id, recordId, ownerId, `${ownerId}/${recordId}/${id}.${extension}`, position, kind, duration],
   );
   return id;
 }

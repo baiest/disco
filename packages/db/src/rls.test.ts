@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { databaseUrl, inTransaction, insertPhoto, insertRecord } from "./harness/db";
+import { databaseUrl, inTransaction, insertMedia, insertRecord } from "./harness/db";
 
 describe.skipIf(databaseUrl() === null)("row level security", () => {
   it("shows each user only their own records", () =>
@@ -57,7 +57,7 @@ describe.skipIf(databaseUrl() === null)("row level security", () => {
       const id = await insertRecord(db, alice);
       await db.as("authenticated", bob);
       const error = await db.fail(
-        "insert into public.record_photos (record_id, owner_id, storage_path, position) values ($1, $2, $3, 0)",
+        "insert into public.record_media (record_id, owner_id, storage_path, position) values ($1, $2, $3, 0)",
         [id, bob, `${bob}/${id}/x.jpg`],
       );
       expect(error).toMatch(/foreign key|row-level security/);
@@ -68,12 +68,12 @@ describe.skipIf(databaseUrl() === null)("row level security", () => {
       const alice = await db.newUser();
       const bob = await db.newUser();
       const id = await insertRecord(db, alice);
-      await insertPhoto(db, alice, id, 0);
+      await insertMedia(db, alice, id, 0);
 
       await db.as("authenticated", alice);
-      expect((await db.query("select id from public.record_photos")).rowCount).toBe(1);
+      expect((await db.query("select id from public.record_media")).rowCount).toBe(1);
       await db.as("authenticated", bob);
-      expect((await db.query("select id from public.record_photos")).rowCount).toBe(0);
+      expect((await db.query("select id from public.record_media")).rowCount).toBe(0);
     }));
 
   it("lets the owner remove a photo of a draft but nobody else", () =>
@@ -81,12 +81,12 @@ describe.skipIf(databaseUrl() === null)("row level security", () => {
       const alice = await db.newUser();
       const bob = await db.newUser();
       const id = await insertRecord(db, alice);
-      const photo = await insertPhoto(db, alice, id, 0);
+      const photo = await insertMedia(db, alice, id, 0);
 
       await db.as("authenticated", bob);
-      expect((await db.query("delete from public.record_photos where id = $1", [photo])).rowCount).toBe(0);
+      expect((await db.query("delete from public.record_media where id = $1", [photo])).rowCount).toBe(0);
       await db.as("authenticated", alice);
-      expect((await db.query("delete from public.record_photos where id = $1", [photo])).rowCount).toBe(1);
+      expect((await db.query("delete from public.record_media where id = $1", [photo])).rowCount).toBe(1);
     }));
 
   it("never hard deletes records through the API", () =>
@@ -104,6 +104,6 @@ describe.skipIf(databaseUrl() === null)("row level security", () => {
       await insertRecord(db, alice);
       await db.as("anon");
       expect(await db.fail("select * from public.records")).toMatch(/permission denied/);
-      expect(await db.fail("select * from public.record_photos")).toMatch(/permission denied/);
+      expect(await db.fail("select * from public.record_media")).toMatch(/permission denied/);
     }));
 });
