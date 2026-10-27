@@ -60,5 +60,5 @@ $$;
 
 grant usage on schema auth, storage, public, extensions to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
-grant all on storage.objects, storage.buckets to authenticated, service_role;
+grant all on storage.objects, storage.buckets to anon, authenticated, service_role;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
