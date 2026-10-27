@@ -36,7 +36,7 @@ export default async function PublicRecordPage({ params }: Props) {
   const message = record.title === null ? t("whatsappMessageUntitled") : t("whatsappMessage", { title: record.title });
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-4 px-4 pb-12 pt-4">
+    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-4 px-4 pb-12 pt-4 sm:px-6">
       <Link href="/" className="flex h-12 items-center text-base font-bold underline underline-offset-4">
         {t("back")}
       </Link>

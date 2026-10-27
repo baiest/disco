@@ -24,12 +24,12 @@ export function LoginForm() {
         autoComplete="email"
         required
         placeholder={t("emailPlaceholder")}
-        className="h-14 rounded-2xl border border-field bg-card px-4 text-lg"
+        className="h-14 rounded-2xl border border-field bg-card px-4 text-lg transition focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent-soft"
       />
       <button
         type="submit"
         disabled={pending}
-        className="h-14 rounded-2xl bg-ink text-lg font-semibold text-accent-ink disabled:opacity-60"
+        className="h-14 rounded-2xl border-2 border-ink bg-transparent text-lg font-semibold text-ink transition active:scale-[0.98] disabled:opacity-60"
       >
         {t("submit")}
       </button>
@@ -59,7 +59,7 @@ export function PasswordForm() {
         autoComplete="username"
         required
         placeholder={t("emailPlaceholder")}
-        className="h-14 rounded-2xl border border-field bg-card px-4 text-lg"
+        className="h-14 rounded-2xl border border-field bg-card px-4 text-lg transition focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent-soft"
       />
       <label htmlFor="password" className="text-lg font-medium">
         {t("passwordLabel")}
@@ -70,12 +70,12 @@ export function PasswordForm() {
         type="password"
         autoComplete="current-password"
         required
-        className="h-14 rounded-2xl border border-field bg-card px-4 text-lg"
+        className="h-14 rounded-2xl border border-field bg-card px-4 text-lg transition focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent-soft"
       />
       <button
         type="submit"
         disabled={pending}
-        className="h-14 rounded-2xl bg-ink text-lg font-semibold text-accent-ink disabled:opacity-60"
+        className="h-14 rounded-2xl bg-ink text-lg font-semibold text-accent-ink shadow-[0_4px_14px_rgb(28_25_23/0.25)] transition active:scale-[0.98] disabled:opacity-60"
       >
         {t("passwordSubmit")}
       </button>

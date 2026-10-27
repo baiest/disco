@@ -15,13 +15,13 @@ export default async function CatalogPage({ searchParams }: Props) {
   const pictures = await signPublicPictures(list.flatMap((record) => (record.firstMediaPath === null ? [] : [record.firstMediaPath])));
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-4 px-4 pb-12 pt-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="font-display text-4xl font-extrabold">{t("title")}</h1>
-        <p className="text-base text-muted">{t("intro")}</p>
+    <main className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-5 px-4 pb-16 pt-8 sm:px-6 sm:pt-12">
+      <header className="flex flex-col gap-2">
+        <h1 className="font-display text-5xl font-extrabold tracking-tight sm:text-6xl">{t("title")}</h1>
+        <p className="max-w-prose text-lg text-muted">{t("intro")}</p>
       </header>
 
-      <form action="/" method="get" role="search" className="relative">
+      <form action="/" method="get" role="search" className="relative sm:max-w-xl">
         <label htmlFor="q" className="sr-only">
           {t("searchLabel")}
         </label>
@@ -32,7 +32,7 @@ export default async function CatalogPage({ searchParams }: Props) {
           enterKeyHint="search"
           defaultValue={query}
           placeholder={t("searchPlaceholder")}
-          className="h-14 w-full rounded-2xl border-2 border-ink bg-card pl-4 pr-16 text-lg"
+          className="h-14 w-full rounded-2xl border-2 border-ink bg-card pl-4 pr-16 text-lg shadow-[0_2px_0_var(--color-ink)] transition focus:shadow-none focus:outline-none focus-visible:border-accent"
         />
         <button type="submit" aria-label={t("searchButton")} className="absolute right-1 top-1 flex size-12 items-center justify-center rounded-xl">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
@@ -60,7 +60,7 @@ export default async function CatalogPage({ searchParams }: Props) {
           <p role="status" className="text-sm font-bold text-muted">
             {t("count", { count: list.length })}
           </p>
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {list.map((record) => (
               <li key={record.id} className="flex">
                 <PublicCard
