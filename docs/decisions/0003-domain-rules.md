@@ -10,7 +10,7 @@ Data is often incomplete, and the app must never invent a price.
 ## Decision
 
 - Statuses: `draft`, `available`, `sold`, `unavailable`.
-- A record can be published (`available`) with at least one photo. Title,
+- A record can be published (`available`) with at least one photo or video. Title,
   artist, price and notes stay optional.
 - A draft can only move to `available`. Published records move freely between
   `available`, `sold`, `unavailable` and back to `draft`.
