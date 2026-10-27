@@ -1,5 +1,7 @@
 import type { CaptureRepo, RepoResult } from "@/lib/capture";
+import type { DiscRecord, MediaKind, RecordStatus } from "@disco/domain";
 import { isSearchRow, type Search, type SearchRow } from "@/lib/inventory";
+import type { DetailRepo } from "@/lib/record-detail";
 import { createSupabaseServerClient } from "./supabase/server";
 
 /** The storage bucket keeps its first name even though it now holds videos too. */
@@ -107,4 +109,115 @@ export async function searchInventory(search: Search): Promise<SearchRow[] | nul
   const data: unknown = result.data;
   const rows: unknown[] = Array.isArray(data) ? data : [];
   return rows.filter(isSearchRow);
+}
+
+const RECORD_COLUMNS =
+  "id, title, artist, price_cop, status, notes, updated_at, sold_at, facebook_posted_at, facebook_needs_update";
+const STATUSES: readonly string[] = ["draft", "available", "sold", "unavailable"];
+const SIGNED_URL_SECONDS = 60 * 60;
+
+function isRecordRow(value: unknown): value is Record<string, unknown> & { id: string; status: RecordStatus } {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const row = value as Record<string, unknown>;
+  return typeof row["id"] === "string" && typeof row["status"] === "string" && STATUSES.includes(row["status"]);
+}
+
+const text = (value: unknown): string | null => (typeof value === "string" ? value : null);
+
+async function readRecord(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  recordId: string,
+): Promise<DiscRecord | null> {
+  const found = await supabase.from("records").select(RECORD_COLUMNS).eq("id", recordId).is("deleted_at", null).maybeSingle();
+  const row: unknown = found.data;
+  if (found.error !== null || !isRecordRow(row)) {
+    return null;
+  }
+  const media = await supabase.from("record_media").select("id", { count: "exact", head: true }).eq("record_id", recordId);
+  return {
+    id: row.id,
+    title: text(row["title"]),
+    artist: text(row["artist"]),
+    priceCop: typeof row["price_cop"] === "number" ? row["price_cop"] : null,
+    status: row.status,
+    notes: text(row["notes"]),
+    mediaCount: media.count ?? 0,
+    updatedAt: text(row["updated_at"]) ?? "",
+    deletedAt: null,
+    soldAt: text(row["sold_at"]),
+    facebookPostedAt: text(row["facebook_posted_at"]),
+    facebookNeedsUpdate: row["facebook_needs_update"] === true,
+  };
+}
+
+/** Reads and edits one record as the signed in user. */
+export async function createDetailRepo(): Promise<DetailRepo> {
+  const supabase = await createSupabaseServerClient();
+  return {
+    async currentUserId() {
+      const { data } = await supabase.auth.getUser();
+      return data.user?.id ?? null;
+    },
+    getRecord: (recordId) => readRecord(supabase, recordId),
+    async updateFields(recordId, values) {
+      const { data, error } = await supabase
+        .from("records")
+        .update({ title: values.title, artist: values.artist, price_cop: values.priceCop, notes: values.notes })
+        .eq("id", recordId)
+        .select("id");
+      return error === null && Array.isArray(data) && data.length > 0 ? OK : { ok: false, reason: "other" };
+    },
+    async setStatus(recordId, status) {
+      const { data, error } = await supabase.from("records").update({ status }).eq("id", recordId).select("id");
+      if (error !== null) {
+        return { ok: false, reason: error.message.includes("at least one photo or video") ? "no_media" : "other" };
+      }
+      return Array.isArray(data) && data.length > 0 ? OK : { ok: false, reason: "other" };
+    },
+  };
+}
+
+export interface MediaView {
+  id: string;
+  kind: MediaKind;
+  url: string;
+}
+
+export interface RecordDetail {
+  record: DiscRecord;
+  media: MediaView[];
+}
+
+/** A record with its photos and videos, as links that work for an hour. Null when it does not exist. */
+export async function loadRecordDetail(recordId: string): Promise<RecordDetail | null> {
+  const supabase = await createSupabaseServerClient();
+  const record = await readRecord(supabase, recordId);
+  if (record === null) {
+    return null;
+  }
+  const listed = await supabase
+    .from("record_media")
+    .select("id, kind, storage_path")
+    .eq("record_id", recordId)
+    .order("position");
+  const list: unknown[] = Array.isArray(listed.data) ? listed.data : [];
+  const items = list.flatMap((entry): { id: string; kind: MediaKind; path: string }[] => {
+    const row = entry as Record<string, unknown>;
+    const kind = row["kind"];
+    return typeof row["id"] === "string" && typeof row["storage_path"] === "string" && (kind === "photo" || kind === "video")
+      ? [{ id: row["id"], kind, path: row["storage_path"] }]
+      : [];
+  });
+  const signed = await supabase.storage.from(BUCKET).createSignedUrls(
+    items.map((item) => item.path),
+    SIGNED_URL_SECONDS,
+  );
+  const urls = new Map((signed.data ?? []).flatMap((entry) => (entry.path !== null && entry.signedUrl ? [[entry.path, entry.signedUrl] as const] : [])));
+  const media = items.flatMap((item) => {
+    const url = urls.get(item.path);
+    return url === undefined ? [] : [{ id: item.id, kind: item.kind, url }];
+  });
+  return { record, media };
 }

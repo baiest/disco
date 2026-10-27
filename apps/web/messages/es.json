@@ -104,6 +104,42 @@
       "unavailable": "{count, plural, one {# no disponible} other {# no disponibles}}",
       "drafts": "{count, plural, one {# borrador} other {# borradores}}"
     },
-    "addNone": "No es ninguno: agregar este disco"
+    "addNone": "No es ninguno: agregar este disco",
+    "copy": "Copia {number} · {status}"
+  },
+  "detail": {
+    "back": "Volver a tus discos",
+    "untitled": "Sin título",
+    "mediaTitle": "Fotos y videos",
+    "noMedia": "Este disco no tiene fotos ni videos.",
+    "statusTitle": "Estado",
+    "status": {
+      "draft": "Borrador",
+      "available": "Disponible",
+      "sold": "Vendido",
+      "unavailable": "No disponible"
+    },
+    "publish": "Publicar",
+    "soldOn": "Vendido el {date}",
+    "changed": "Ahora está: {status}.",
+    "undo": "Deshacer",
+    "undone": "Listo, volvió a: {status}.",
+    "statusError": {
+      "invalid_id": "Algo salió mal. Recarga la página.",
+      "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
+      "not_found": "No encontramos este disco.",
+      "invalid_status": "Ese estado no es válido.",
+      "no_media": "Agrega una foto o un video antes de publicarlo.",
+      "same_status": "Ya está en ese estado.",
+      "publish_first": "Primero publícalo.",
+      "failed": "No se pudo cambiar. Revisa tu conexión e inténtalo de nuevo."
+    },
+    "save": "Guardar cambios",
+    "saved": "Cambios guardados.",
+    "saveError": {
+      "invalid_id": "Algo salió mal. Recarga la página.",
+      "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
+      "failed": "No se pudo guardar. Revisa tu conexión e inténtalo de nuevo."
+    }
   }
 }
