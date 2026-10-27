@@ -79,6 +79,48 @@ describe("FacebookComposer", () => {
     expect(sent.map((file) => file.name)).toEqual(["m1.jpg", "m2.mp4"]);
   });
 
+  it("copies the text by itself when it opens the share sheet, and says to paste it", async () => {
+    const calls: string[] = [];
+    const writeText = vi.fn(() => {
+      calls.push("copy");
+      return Promise.resolve();
+    });
+    const share = vi.fn(() => {
+      calls.push("share");
+      return Promise.resolve();
+    });
+    stubNavigator({ canShare: () => true, share, clipboard: { writeText } });
+    renderComposer();
+    await waitFor(() => {
+      expect(button(messages.publish.share).disabled).toBe(false);
+    });
+    fireEvent.click(button(messages.publish.share));
+    await waitFor(() => {
+      expect(screen.getByText(messages.publish.sharedPasteHint)).toBeTruthy();
+    });
+    expect(calls).toEqual(["copy", "share"]);
+    expect(writeText).toHaveBeenCalledWith("hola");
+    expect(share).toHaveBeenCalledWith(expect.objectContaining({ text: "hola" }));
+  });
+
+  it("does not copy anything when there is no text", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    stubNavigator({ canShare: () => true, share: vi.fn().mockResolvedValue(undefined), clipboard: { writeText } });
+    render(
+      <NextIntlClientProvider locale="es" messages={messages}>
+        <FacebookComposer recordIds={["r1"]} media={media} initialText="" />
+      </NextIntlClientProvider>,
+    );
+    await waitFor(() => {
+      expect(button(messages.publish.share).disabled).toBe(false);
+    });
+    fireEvent.click(button(messages.publish.share));
+    await waitFor(() => {
+      expect(screen.getByText(messages.publish.sharedHint)).toBeTruthy();
+    });
+    expect(writeText).not.toHaveBeenCalled();
+  });
+
   it("offers the files to save when the phone cannot share them", async () => {
     stubNavigator({});
     renderComposer();

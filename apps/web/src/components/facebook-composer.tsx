@@ -46,9 +46,11 @@ export function FacebookComposer({ recordIds, media, initialText }: Props) {
     if (files.state !== "ready") {
       return;
     }
-    const outcome = await shareFiles(navigator, files.files);
+    // Copy first: once the share sheet is open this page loses the right to use the clipboard.
+    const copied = text.trim() !== "" && (await copyText(navigator, text));
+    const outcome = await shareFiles(navigator, files.files, text.trim());
     if (outcome === "shared") {
-      setMessage(t("sharedHint"));
+      setMessage(t(copied ? "sharedPasteHint" : "sharedHint"));
     } else if (outcome === "unsupported") {
       setShowSave(true);
       setMessage(t("unsupported"));

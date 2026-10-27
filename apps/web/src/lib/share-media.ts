@@ -3,7 +3,7 @@ import type { MediaKind } from "@disco/domain";
 /** The parts of `navigator` used to hand a post to Facebook, so tests can replace them. */
 export interface ShareNavigator {
   canShare?: (data: { files: File[] }) => boolean;
-  share?: (data: { files: File[] }) => Promise<void>;
+  share?: (data: { files: File[]; text?: string }) => Promise<void>;
   clipboard?: { writeText: (text: string) => Promise<void> };
 }
 
@@ -21,13 +21,16 @@ export async function copyText(nav: ShareNavigator, text: string): Promise<boole
 
 export type ShareOutcome = "shared" | "cancelled" | "unsupported" | "failed";
 
-/** Opens the phone's share sheet with the files (Facebook is one of the choices). */
-export async function shareFiles(nav: ShareNavigator, files: File[]): Promise<ShareOutcome> {
+/**
+ * Opens the phone's share sheet with the files (Facebook is one of the choices). The text goes along for
+ * the apps that use it; Facebook ignores it, so the screen also copies it for the owner to paste.
+ */
+export async function shareFiles(nav: ShareNavigator, files: File[], text = ""): Promise<ShareOutcome> {
   if (files.length === 0 || nav.share === undefined || nav.canShare?.({ files }) !== true) {
     return "unsupported";
   }
   try {
-    await nav.share({ files });
+    await nav.share(text === "" ? { files } : { files, text });
     return "shared";
   } catch (error) {
     return error instanceof Error && error.name === "AbortError" ? "cancelled" : "failed";

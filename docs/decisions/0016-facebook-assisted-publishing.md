@@ -27,3 +27,11 @@ Facebook post; the data of each record is for the catalog, not for the post text
   confirmation is his word.
 - Publishing from the app would need a Facebook Page and a Meta app review. Not planned.
 - Only available records can be published.
+
+## Update: the text is copied when the share sheet opens
+
+Facebook ignores the text that another app sends together with files, and no app can fill its
+composer. Copying took a separate tap that was easy to skip, so the text showed up empty in Facebook.
+The "Abrir Facebook con las fotos" button now copies the text first (the clipboard stops working for a
+page once the share sheet is open), then opens the sheet, and tells the owner to paste in Facebook. The
+text also goes along in the share for apps that do use it, such as WhatsApp. With no text, nothing is copied.

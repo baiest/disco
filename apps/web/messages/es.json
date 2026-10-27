@@ -205,6 +205,7 @@
       "unauthenticated": "Tu sesión venció. Vuelve a entrar.",
       "failed": "No se pudo guardar que ya lo publicaste. Revisa tu conexión e inténtalo de nuevo."
     },
-    "untitled": "Sin título"
+    "untitled": "Sin título",
+    "sharedPasteHint": "Copiamos tu texto. En Facebook, toca el cuadro de texto, mantén presionado y elige Pegar."
   }
 }

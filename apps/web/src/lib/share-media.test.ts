@@ -24,6 +24,18 @@ describe("shareFiles", () => {
     expect(share).toHaveBeenCalledWith({ files: [file] });
   });
 
+  it("sends the text along, for the apps that do use it", async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    expect(await shareFiles({ canShare: () => true, share }, [file], "hola")).toBe("shared");
+    expect(share).toHaveBeenCalledWith({ files: [file], text: "hola" });
+  });
+
+  it("leaves the text out when there is none", async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    await shareFiles({ canShare: () => true, share }, [file], "");
+    expect(share).toHaveBeenCalledWith({ files: [file] });
+  });
+
   it("is unsupported when the browser cannot share files", async () => {
     expect(await shareFiles({}, [file])).toBe("unsupported");
     expect(await shareFiles({ share: vi.fn() }, [file])).toBe("unsupported");
