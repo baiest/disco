@@ -48,9 +48,23 @@ describe("PublishReview", () => {
     expect(screen.getByText("3 fotos y videos")).toBeTruthy();
   });
 
-  it("lets the owner edit a record, which opens it", () => {
+  it("opens a record by tapping its card, and brings the owner back to this post", () => {
+    renderReview([item("a", 1), item("b", 1)]);
+    expect(screen.getByRole("link", { name: /Disco a/ }).getAttribute("href")).toBe("/admin/records/a?from=publish&ids=a,b");
+    expect(screen.queryByText("Editar")).toBeNull();
+  });
+
+  it("remembers only the records still in the post when a card is opened", () => {
+    renderReview([item("a", 1), item("b", 1)]);
+    fireEvent.click(screen.getByRole("button", { name: `${messages.publish.removeFromBatch} Disco a` }));
+    expect(screen.getByRole("link", { name: /Disco b/ }).getAttribute("href")).toBe("/admin/records/b?from=publish&ids=b");
+  });
+
+  it("removes with a cross that is not part of the link, so tapping it does not open the record", () => {
     renderReview([item("a", 1)]);
-    expect(screen.getByRole("link", { name: `${messages.publish.edit} Disco a` }).getAttribute("href")).toBe("/admin/records/a");
+    const cross = screen.getByRole("button", { name: `${messages.publish.removeFromBatch} Disco a` });
+    expect(cross.closest("a")).toBeNull();
+    expect(cross.textContent).toBe("");
   });
 
   it("takes a record out of the post and out of the batch kept on the phone", () => {
@@ -82,9 +96,9 @@ describe("PublishReview", () => {
     expect(screen.getByTestId("composer").textContent).toBe("b|2");
   });
 
-  it("offers to add more discs, keeping the ones already chosen", () => {
+  it("offers to add more discs; the ones already chosen are kept in the batch", () => {
     renderReview([item("a", 1), item("b", 1)]);
-    expect(screen.getByRole("link", { name: messages.publish.addMore }).getAttribute("href")).toBe("/admin/publish?keep=a,b");
+    expect(screen.getByRole("link", { name: messages.publish.addMore }).getAttribute("href")).toBe("/admin/publish");
   });
 
   it("blocks publishing while it is over what a post holds, and unblocks when something is taken out", () => {

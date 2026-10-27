@@ -15,10 +15,10 @@ function item(id: string, mediaCount: number, thumbnailUrl: string | null = `htt
   return { id, title: `Disco ${id.slice(0, 2)}`, artist: null, mediaCount, thumbnailPath: null, thumbnailUrl };
 }
 
-function renderCard() {
+function renderCard(showReview = true) {
   return render(
     <NextIntlClientProvider locale="es" messages={messages}>
-      <BatchSummaryCard />
+      <BatchSummaryCard showReview={showReview} />
     </NextIntlClientProvider>,
   );
 }
@@ -49,6 +49,16 @@ describe("BatchSummaryCard", () => {
     expect(container.querySelectorAll("img")).toHaveLength(2);
     expect(screen.getByRole("link", { name: messages.publish.batchReview }).getAttribute("href")).toBe(`/admin/publish?ids=${A},${B}`);
     expect(loadBatchSummariesAction).toHaveBeenCalledWith([A, B]);
+  });
+
+  it("can leave out the link to review, for screens that have their own button for it", async () => {
+    localStorage.setItem("disco:batch", JSON.stringify([A]));
+    loadBatchSummariesAction.mockResolvedValue([item(A, 1)]);
+    renderCard(false);
+    await waitFor(() => {
+      expect(screen.getByText("1 disco · 1 de 30 fotos y videos")).toBeTruthy();
+    });
+    expect(screen.queryByRole("link", { name: messages.publish.batchReview })).toBeNull();
   });
 
   it("shows a record icon where there is no miniature", async () => {
